@@ -4,10 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "md-to-adf": "bun run scripts/md-to-adf.ts"
+    "md-to-adf": "bun run scripts/md-to-adf.ts",
+    "test": "bun test tests/"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   },
   "peerDependencies": {
     "typescript": "^5"

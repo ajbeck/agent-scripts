@@ -1,9 +1,27 @@
 /**
  * ACLI Jira Workitem commands
+ *
+ * Uses the --from-json pattern for create/edit operations to support:
+ * - Custom fields via additionalAttributes
+ * - Batch editing (multiple issues)
+ * - Cleaner ADF handling (object vs stringified)
+ *
+ * JSON Format Notes (from `acli jira workitem <cmd> --generate-json`):
+ * - Templates are command-specific (create vs edit have different fields)
+ * - Templates are static placeholders, NOT populated from existing workitems
+ * - --generate-json is mutually exclusive with --key/--jql/--filter/--from-json
+ *
+ * CREATE JSON structure:
+ *   { projectKey, type, summary, description (ADF), assignee, labels[], parentIssueId, additionalAttributes }
+ *
+ * EDIT JSON structure:
+ *   { issues[], summary, description (ADF), assignee, type, labelsToAdd[], labelsToRemove[] }
+ *   Note: To edit based on current state, first call `workitem view --json` then transform.
  */
 
 import { jiraExec, type AcliResult } from "./base";
-import { markdownToAdfString } from "../md-to-adf";
+import { markdownToAdf, markdownToAdfString } from "../md-to-adf";
+import { withTempJson } from "./utils";
 
 export interface WorkitemCreateOptions {
   project: string;
@@ -11,10 +29,10 @@ export interface WorkitemCreateOptions {
   summary: string;
   description?: string;
   descriptionMarkdown?: string;
-  descriptionFile?: string;
   assignee?: string;
   labels?: string[];
   parent?: string;
+  customFields?: Record<string, unknown>;
 }
 
 export interface WorkitemSearchOptions {
@@ -26,14 +44,15 @@ export interface WorkitemSearchOptions {
 }
 
 export interface WorkitemEditOptions {
-  key: string;
+  key: string | string[];
   summary?: string;
   description?: string;
   descriptionMarkdown?: string;
-  descriptionFile?: string;
   assignee?: string;
-  labels?: string;
+  labelsToAdd?: string[];
+  labelsToRemove?: string[];
   type?: string;
+  customFields?: Record<string, unknown>;
 }
 
 export interface WorkitemTransitionOptions {
@@ -49,36 +68,38 @@ export interface CommentCreateOptions {
 }
 
 /**
- * Create a new workitem
+ * Create a new workitem using --from-json pattern
  */
 export async function create<T = unknown>(
   options: WorkitemCreateOptions
 ): Promise<AcliResult<T>> {
-  const args: string[] = [
-    "--project", options.project,
-    "--type", options.type,
-    "--summary", options.summary,
-  ];
+  const payload: Record<string, unknown> = {
+    projectKey: options.project,
+    type: options.type,
+    summary: options.summary,
+  };
 
   if (options.descriptionMarkdown) {
-    args.push("--description", markdownToAdfString(options.descriptionMarkdown));
+    payload.description = markdownToAdf(options.descriptionMarkdown);
   } else if (options.description) {
-    args.push("--description", options.description);
-  }
-  if (options.descriptionFile) {
-    args.push("--description-file", options.descriptionFile);
+    payload.description = options.description;
   }
   if (options.assignee) {
-    args.push("--assignee", options.assignee);
+    payload.assignee = options.assignee;
   }
   if (options.labels?.length) {
-    args.push("--label", options.labels.join(","));
+    payload.labels = options.labels;
   }
   if (options.parent) {
-    args.push("--parent", options.parent);
+    payload.parentIssueId = options.parent;
+  }
+  if (options.customFields) {
+    payload.additionalAttributes = options.customFields;
   }
 
-  return jiraExec<T>("workitem create", args);
+  return withTempJson(payload, (path) =>
+    jiraExec<T>("workitem create", ["--from-json", path])
+  );
 }
 
 /**
@@ -123,35 +144,44 @@ export async function search<T = unknown>(
 }
 
 /**
- * Edit a workitem
+ * Edit a workitem using --from-json pattern
+ *
+ * Supports batch editing by passing an array of keys.
  */
 export async function edit<T = unknown>(
   options: WorkitemEditOptions
 ): Promise<AcliResult<T>> {
-  const args = ["--key", options.key, "--yes"];
+  const issues = Array.isArray(options.key) ? options.key : [options.key];
+
+  const payload: Record<string, unknown> = { issues };
 
   if (options.summary) {
-    args.push("--summary", options.summary);
+    payload.summary = options.summary;
   }
   if (options.descriptionMarkdown) {
-    args.push("--description", markdownToAdfString(options.descriptionMarkdown));
+    payload.description = markdownToAdf(options.descriptionMarkdown);
   } else if (options.description) {
-    args.push("--description", options.description);
-  }
-  if (options.descriptionFile) {
-    args.push("--description-file", options.descriptionFile);
+    payload.description = options.description;
   }
   if (options.assignee) {
-    args.push("--assignee", options.assignee);
+    payload.assignee = options.assignee;
   }
-  if (options.labels) {
-    args.push("--labels", options.labels);
+  if (options.labelsToAdd?.length) {
+    payload.labelsToAdd = options.labelsToAdd;
+  }
+  if (options.labelsToRemove?.length) {
+    payload.labelsToRemove = options.labelsToRemove;
   }
   if (options.type) {
-    args.push("--type", options.type);
+    payload.type = options.type;
+  }
+  if (options.customFields) {
+    payload.additionalAttributes = options.customFields;
   }
 
-  return jiraExec<T>("workitem edit", args);
+  return withTempJson(payload, (path) =>
+    jiraExec<T>("workitem edit", ["--from-json", path, "--yes"])
+  );
 }
 
 /**

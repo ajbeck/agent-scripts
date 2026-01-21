@@ -34,7 +34,7 @@ bun run scripts/md-to-adf.ts --input README.md
 
 ### ACLI Jira Interface
 
-TypeScript interface for the `acli` CLI tool with automatic markdown-to-ADF conversion.
+TypeScript interface for the `acli` CLI tool with automatic markdown-to-ADF conversion. Uses acli's `--from-json` pattern internally for create/edit operations, enabling custom fields and batch editing.
 
 ```typescript
 import { acli } from "./scripts";
@@ -45,6 +45,15 @@ await acli.workitem.create({
   type: "Task",
   summary: "New task",
   descriptionMarkdown: "# Overview\n\nThis is **bold** text.",
+  customFields: { customfield_10000: { value: "custom value" } },
+});
+
+// Edit workitem (supports batch editing)
+await acli.workitem.edit({
+  key: "TEAM-123", // or ["TEAM-123", "TEAM-124"] for batch
+  descriptionMarkdown: "# Updated\n\nNew description.",
+  labelsToAdd: ["feature"],
+  labelsToRemove: ["wip"],
 });
 
 // Search workitems
@@ -57,107 +66,73 @@ await acli.workitem.comment.create({
 });
 ```
 
+#### How it works
+
+1. Markdown is converted to ADF in-memory via `markdownToAdf()`
+2. A JSON payload is built with the ADF object (not stringified)
+3. Payload is written to a temp file (`/tmp/acli-{timestamp}.json`)
+4. `acli jira workitem <cmd> --from-json <path>` is executed
+5. Temp file is cleaned up (even on error)
+
 ## Installing to Another Project
 
-### Prerequisites
+### Quick Install (Remote)
 
-The target directory must have a `package.json`. Two options:
-
-**Option 1: Install at repo root (recommended)**
+No local clone needed - run directly from GitHub:
 
 ```sh
 cd /path/to/project
-bun init -y  # if no package.json exists
-bun run /path/to/agent-scripts/scripts/setup.ts --target .
+bun run https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts
 ```
 
-Import path: `import { acli } from "./scripts"`
+The setup script will:
 
-**Option 2: Install in a subdirectory**
+- Run `bun init` if no package.json exists
+- Download all required files from GitHub
+- Install dependencies
+- Create `scripts/AGENT_SCRIPTS.md` documentation
 
-Useful for isolating scripts in a dedicated folder:
+### Local Install
+
+If you have the repo cloned locally:
 
 ```sh
-mkdir -p tools/agent-scripts && cd tools/agent-scripts
-bun init -y
-bun run /path/to/agent-scripts/scripts/setup.ts --target .
+cd /path/to/project
+bun run /path/to/agent-scripts/scripts/setup.ts
 ```
 
-Import path: `import { acli } from "./tools/agent-scripts/scripts"`
-
-### Automated Setup
-
-Run the setup script from your target directory:
+### Options
 
 ```sh
-bun run /path/to/agent-scripts/scripts/setup.ts --target .
+bun run setup.ts                          # Install to current directory
+bun run setup.ts --target /other/project  # Install to specific directory
+bun run setup.ts --dry-run                # Preview changes
+bun run setup.ts --skip-deps              # Skip dependency installation
 ```
 
-Options:
+### After Installation
 
-- `--target <path>` - Target project directory (required)
-- `--dry-run` - Show what would be done without making changes
-- `--skip-deps` - Skip dependency installation
+Add to your project's `CLAUDE.md`:
 
-### Manual Setup
+```markdown
+@scripts/AGENT_SCRIPTS.md
+```
 
-1. **Copy the scripts folder:**
+Import and use:
 
-   ```sh
-   cp -r /path/to/agent-scripts/scripts/lib ./scripts/lib
-   cp /path/to/agent-scripts/scripts/md-to-adf.ts ./scripts/
-   ```
-
-2. **Install dependencies:**
-
-   ```sh
-   bun add @atlaskit/adf-schema @atlaskit/editor-json-transformer @atlaskit/editor-markdown-transformer
-   ```
-
-3. **Add to your CLAUDE.md** (see template below)
+```typescript
+import { acli } from "./scripts";
+```
 
 ## CLAUDE.md Configuration
 
-After copying the scripts, add the following to your project's `CLAUDE.md` so Claude knows how to use the tools.
-
-### Required Section
+The setup script creates `scripts/AGENT_SCRIPTS.md` with full documentation. Reference it in your project's `CLAUDE.md`:
 
 ```markdown
-## Agent Scripts
-
-TypeScript tools are available in `scripts/lib/`. Import and use them in code:
-
-\`\`\`typescript
-import { acli, markdownToAdf } from "./scripts";
-
-// Jira operations with markdown support
-await acli.workitem.create({
-project: "PROJECT_KEY",
-type: "Task",
-summary: "Task title",
-descriptionMarkdown: "Markdown content here",
-});
-
-// Direct markdown to ADF conversion
-const adf = markdownToAdf("# Heading\n\n**bold**");
-\`\`\`
-
-### Available Functions
-
-- `acli.workitem.create()` - Create Jira issues (supports `descriptionMarkdown`)
-- `acli.workitem.edit()` - Edit issues (supports `descriptionMarkdown`)
-- `acli.workitem.search()` - Search with JQL
-- `acli.workitem.view()` - Get issue details
-- `acli.workitem.transition()` - Change issue status
-- `acli.workitem.comment.create()` - Add comments (supports `bodyMarkdown`)
-- `acli.project.list()` - List projects
-- `acli.board.search()` - Search boards
-- `markdownToAdf()` - Convert markdown string to ADF object
+@scripts/AGENT_SCRIPTS.md
 ```
 
-### Project-Specific Configuration
-
-Add any project-specific details:
+You can also add project-specific settings:
 
 ```markdown
 ### Project Settings

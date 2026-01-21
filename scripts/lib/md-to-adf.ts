@@ -39,6 +39,10 @@ const schema = createSchema({
     "codeBlock",
     "hardBreak",
     "rule",
+    "table",
+    "tableRow",
+    "tableCell",
+    "tableHeader",
   ],
   marks: ["strong", "em", "code", "link", "strike"],
 });
