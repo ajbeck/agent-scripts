@@ -1,0 +1,20 @@
+{
+  "name": "agent-scripts",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "md-to-adf": "bun run scripts/md-to-adf.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@atlaskit/adf-schema": "^51.5.5",
+    "@atlaskit/editor-json-transformer": "^8.31.4",
+    "@atlaskit/editor-markdown-transformer": "^5.20.4"
+  }
+}
