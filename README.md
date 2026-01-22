@@ -2,6 +2,8 @@
 
 A collection of TypeScript tools designed for Claude Code to discover and execute. Following the [code execution with MCP](https://www.anthropic.com/engineering/code-execution-with-mcp) pattern, these scripts enable efficient agent-tool interaction through filesystem-based progressive disclosure.
 
+Inspired by [@steipete's agent-scripts](https://github.com/steipete/agent-scripts) - check out his repo for additional patterns and tools.
+
 ## Prerequisites
 
 The following must be installed and available in PATH:
@@ -66,6 +68,24 @@ await acli.workitem.comment.create({
 });
 ```
 
+#### CLI Usage
+
+Scripts are also directly executable:
+
+```sh
+# View a workitem
+./scripts/acli.ts workitem view TEAM-123
+
+# Search workitems
+./scripts/acli.ts workitem search --jql "project = TEAM" --limit 10
+
+# Create a workitem
+./scripts/acli.ts workitem create --project TEAM --type Task --summary "New task"
+
+# Edit a workitem
+./scripts/acli.ts workitem edit --key TEAM-123 --summary "Updated title"
+```
+
 #### How it works
 
 1. Markdown is converted to ADF in-memory via `markdownToAdf()`
@@ -104,11 +124,20 @@ bun run /path/to/agent-scripts/scripts/setup.ts
 ### Options
 
 ```sh
-bun run setup.ts                          # Install to current directory
-bun run setup.ts --target /other/project  # Install to specific directory
-bun run setup.ts --dry-run                # Preview changes
-bun run setup.ts --skip-deps              # Skip dependency installation
+bun run setup.ts                                    # Install to current directory
+bun run setup.ts --target /other/project            # Install to specific directory
+bun run setup.ts --project MYPROJ --types Task,Bug  # With project config
+bun run setup.ts --dry-run                          # Preview changes
+bun run setup.ts --skip-deps                        # Skip dependency installation
 ```
+
+| Option            | Description                                        |
+| ----------------- | -------------------------------------------------- |
+| `--target <path>` | Target directory (default: current directory)      |
+| `--project <key>` | Default Jira project key for documentation         |
+| `--types <types>` | Comma-separated issue types (e.g., Task,Bug,Story) |
+| `--dry-run`       | Preview changes without making them                |
+| `--skip-deps`     | Skip dependency installation                       |
 
 ### After Installation
 
