@@ -11,9 +11,11 @@
  *   bun run scripts/setup.ts --target /other/project
  *
  * Options:
- *   --target <path>   Target directory (default: current directory)
- *   --dry-run         Show what would be done without making changes
- *   --skip-deps       Skip dependency installation
+ *   --target <path>     Target directory (default: current directory)
+ *   --project <key>     Default Jira project key (e.g., MYPROJECT)
+ *   --types <types>     Comma-separated issue types (e.g., Task,Bug,Story)
+ *   --dry-run           Show what would be done without making changes
+ *   --skip-deps         Skip dependency installation
  */
 
 import { join, dirname, resolve } from "path";
@@ -31,6 +33,7 @@ const DEPENDENCIES = [
 const FILES_TO_DOWNLOAD = [
   "scripts/index.ts",
   "scripts/md-to-adf.ts",
+  "scripts/acli.ts",
   "scripts/lib/index.ts",
   "scripts/lib/md-to-adf.ts",
   "scripts/lib/acli/index.ts",
@@ -41,10 +44,29 @@ const FILES_TO_DOWNLOAD = [
   "scripts/lib/acli/utils.ts",
 ];
 
-const AGENT_SCRIPTS_MD = `# Agent Scripts
+interface ProjectConfig {
+  project?: string;
+  types?: string[];
+}
+
+function generateAgentScriptsMd(config: ProjectConfig): string {
+  const project = config.project || "PROJECT_KEY";
+  const types = config.types?.length ? config.types : ["Task", "Bug", "Story"];
+
+  const projectSection = config.project
+    ? `
+## Project Settings
+
+- **Default project**: \`${project}\`
+- **Issue types**: ${types.join(", ")}
+- **Common JQL**: \`project = ${project} AND status != Done\`
+`
+    : "";
+
+  return `# Agent Scripts
 
 TypeScript tools for Jira operations. Uses acli's \`--from-json\` pattern internally.
-
+${projectSection}
 ## Usage
 
 \`\`\`typescript
@@ -52,8 +74,8 @@ import { acli, markdownToAdf } from "./scripts";
 
 // Create workitem with markdown (auto-converts to ADF)
 await acli.workitem.create({
-  project: "PROJECT_KEY",
-  type: "Task",
+  project: "${project}",
+  type: "${types[0]}",
   summary: "Task title",
   descriptionMarkdown: "# Heading\\n\\n**bold** text",
   labels: ["feature"],
@@ -62,19 +84,19 @@ await acli.workitem.create({
 
 // Edit workitem (supports batch editing via key array)
 await acli.workitem.edit({
-  key: "KEY-123", // or ["KEY-123", "KEY-124"] for batch
+  key: "${project}-123", // or ["${project}-123", "${project}-124"] for batch
   descriptionMarkdown: "Updated description",
   labelsToAdd: ["done"],
   labelsToRemove: ["wip"],
 });
 
 // Search and view
-const issues = await acli.workitem.search({ jql: "project = PROJ" });
-const issue = await acli.workitem.view("KEY-123");
+const issues = await acli.workitem.search({ jql: "project = ${project}" });
+const issue = await acli.workitem.view("${project}-123");
 
 // Add comment
 await acli.workitem.comment.create({
-  key: "KEY-123",
+  key: "${project}-123",
   bodyMarkdown: "Comment with **formatting**",
 });
 \`\`\`
@@ -91,6 +113,7 @@ await acli.workitem.comment.create({
 | \`acli.workitem.comment.create()\` | \`key\`, \`bodyMarkdown\`                                                                         |
 | \`markdownToAdf()\`              | Returns ADF object from markdown string                                                             |
 `;
+}
 
 function printHelp() {
   console.log(`
@@ -106,15 +129,18 @@ Usage:
   bun run scripts/setup.ts [options]
 
 Options:
-  --target <path>   Target directory (default: current directory)
-  --dry-run         Show what would be done without making changes
-  --skip-deps       Skip dependency installation
-  --help, -h        Show this help message
+  --target <path>     Target directory (default: current directory)
+  --project <key>     Default Jira project key (e.g., MYPROJECT)
+  --types <types>     Comma-separated issue types (e.g., Task,Bug,Story)
+  --dry-run           Show what would be done without making changes
+  --skip-deps         Skip dependency installation
+  --help, -h          Show this help message
 
 Examples:
-  bun run setup.ts                          # Install to current directory
-  bun run setup.ts --target /path/to/proj   # Install to specific directory
-  bun run setup.ts --dry-run                # Preview changes
+  bun run setup.ts                                    # Install to current directory
+  bun run setup.ts --project MYPROJ --types Task,Bug  # With project config
+  bun run setup.ts --target /path/to/proj             # Install to specific directory
+  bun run setup.ts --dry-run                          # Preview changes
 `);
 }
 
@@ -201,7 +227,7 @@ async function copyFilesFromLocal(
   }
 
   // Copy top-level files
-  for (const file of ["index.ts", "md-to-adf.ts"]) {
+  for (const file of ["index.ts", "md-to-adf.ts", "acli.ts"]) {
     const src = join(sourceDir, "scripts", file);
     const dest = join(scriptsDir, file);
     console.log(`Copying scripts/${file}...`);
@@ -263,16 +289,27 @@ async function installDeps(targetDir: string, dryRun: boolean): Promise<void> {
  */
 async function writeDocumentation(
   scriptsDir: string,
+  config: ProjectConfig,
   dryRun: boolean
 ): Promise<void> {
   const docPath = join(scriptsDir, "AGENT_SCRIPTS.md");
+  const content = generateAgentScriptsMd(config);
 
   if (dryRun) {
     console.log(`  Would create: ${docPath}`);
+    if (config.project) {
+      console.log(`  With project: ${config.project}`);
+      console.log(`  With types: ${config.types?.join(", ") || "Task, Bug, Story"}`);
+    }
   } else {
-    await Bun.write(docPath, AGENT_SCRIPTS_MD);
+    await Bun.write(docPath, content);
     console.log(`  Created: ${docPath}`);
   }
+}
+
+function getArgValue(args: string[], flag: string): string | undefined {
+  const index = args.indexOf(flag);
+  return index !== -1 && args[index + 1] ? args[index + 1] : undefined;
 }
 
 async function main() {
@@ -284,13 +321,14 @@ async function main() {
   }
 
   // Parse arguments
-  const targetIndex = args.indexOf("--target");
-  const targetDir =
-    targetIndex !== -1 && args[targetIndex + 1]
-      ? args[targetIndex + 1]
-      : ".";
+  const targetDir = getArgValue(args, "--target") || ".";
+  const project = getArgValue(args, "--project");
+  const typesArg = getArgValue(args, "--types");
+  const types = typesArg ? typesArg.split(",").map((t) => t.trim()) : undefined;
   const dryRun = args.includes("--dry-run");
   const skipDeps = args.includes("--skip-deps");
+
+  const projectConfig: ProjectConfig = { project, types };
 
   const absTargetDir = resolve(targetDir);
   const scriptsDir = join(absTargetDir, "scripts");
@@ -338,7 +376,7 @@ async function main() {
 
   // Write documentation
   console.log("\nCreating documentation...");
-  await writeDocumentation(scriptsDir, dryRun);
+  await writeDocumentation(scriptsDir, projectConfig, dryRun);
 
   // Final instructions
   console.log("\n" + "=".repeat(60));
