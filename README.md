@@ -94,6 +94,35 @@ Scripts are also directly executable:
 4. `acli jira workitem <cmd> --from-json <path>` is executed
 5. Temp file is cleaned up (even on error)
 
+### GitHub Workflow Validator
+
+Validate GitHub Actions workflow YAML files against the official JSON schema.
+
+```sh
+./scripts/validate-workflow.ts .github/workflows/ci.yml
+./scripts/validate-workflow.ts workflow.yaml
+```
+
+On success:
+
+```
+Valid workflow: .github/workflows/ci.yml
+```
+
+On failure:
+
+```
+Validation failed!
+
+  Path: /jobs/build/steps/0
+  Error: must have required property 'run'
+  Details: {"missingProperty":"run"}
+
+Invalid workflow: .github/workflows/ci.yml
+```
+
+The validator fetches the schema from [SchemaStore](https://github.com/SchemaStore/schemastore) and uses Ajv for validation.
+
 ## Installing to Another Project
 
 ### Quick Install (Remote)
@@ -199,4 +228,6 @@ echo "# Test" | bun run scripts/md-to-adf.ts
 - [@atlaskit/adf-schema](https://www.npmjs.com/package/@atlaskit/adf-schema) - ADF schema definitions
 - [@atlaskit/editor-markdown-transformer](https://www.npmjs.com/package/@atlaskit/editor-markdown-transformer) - Markdown to ProseMirror
 - [@atlaskit/editor-json-transformer](https://www.npmjs.com/package/@atlaskit/editor-json-transformer) - ProseMirror to ADF JSON
+- [ajv](https://www.npmjs.com/package/ajv) - JSON schema validator
+- [ajv-formats](https://www.npmjs.com/package/ajv-formats) - Format validators for Ajv
 - [acli](https://github.com/atlassian/acli) - Atlassian CLI (must be installed separately and in PATH)

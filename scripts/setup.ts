@@ -28,12 +28,15 @@ const DEPENDENCIES = [
   "@atlaskit/adf-schema",
   "@atlaskit/editor-json-transformer",
   "@atlaskit/editor-markdown-transformer",
+  "ajv",
+  "ajv-formats",
 ];
 
 const FILES_TO_DOWNLOAD = [
   "scripts/index.ts",
   "scripts/md-to-adf.ts",
   "scripts/acli.ts",
+  "scripts/validate-workflow.ts",
   "scripts/lib/index.ts",
   "scripts/lib/md-to-adf.ts",
   "scripts/lib/acli/index.ts",
@@ -227,7 +230,7 @@ async function copyFilesFromLocal(
   }
 
   // Copy top-level files
-  for (const file of ["index.ts", "md-to-adf.ts", "acli.ts"]) {
+  for (const file of ["index.ts", "md-to-adf.ts", "acli.ts", "validate-workflow.ts"]) {
     const src = join(sourceDir, "scripts", file);
     const dest = join(scriptsDir, file);
     console.log(`Copying scripts/${file}...`);
