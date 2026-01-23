@@ -2,10 +2,11 @@
  * Agent Scripts Library
  *
  * Usage:
- *   import { acli, markdownToAdf } from "./scripts";
+ *   import { acli, markdownToAdf, peekaboo } from "./scripts";
  *
  *   const issues = await acli.workitem.search({ jql: "project = TEAM" });
  *   const adf = markdownToAdf("# Hello");
+ *   await peekaboo.click({ on: "B1" });
  */
 
 // ACLI Jira interface
@@ -17,3 +18,11 @@ export {
   markdownToAdfString,
   type AdfDocument,
 } from "./md-to-adf";
+
+// Peekaboo macOS automation interface
+export {
+  peekaboo,
+  peekabooExec,
+  peekabooExecRaw,
+  type PeekabooResult,
+} from "./peekaboo";
