@@ -14,15 +14,26 @@ Default to using Bun instead of Node.js.
 - `git checkout` ok for PR review / explicit request.
 - Branch changes require user consent.
 - Destructive ops forbidden unless explicit (`reset --hard`, `clean`, `restore`, `rm`, …).
-- Commit helper on PATH: `committer` (bash). Prefer it; if repo has `./scripts/committer`, use that.
-- Don’t delete/rename unexpected stuff; stop + ask.
+- Don't delete/rename unexpected stuff; stop + ask.
 - No repo-wide S/R scripts; keep edits small/reviewable.
-- Avoid manual `git stash`; if Git auto-stashes during pull/rebase, that’s fine (hint, not hard guardrail).
-- If user types a command (“pull and push”), that’s consent for that command.
+- Avoid manual `git stash`; if Git auto-stashes during pull/rebase, that's fine (hint, not hard guardrail).
+- If user types a command ("pull and push"), that's consent for that command.
 - No amend unless asked.
 - Big review: `git --no-pager diff --color=never`.
 - Multi-agent: check `git status/diff` before edits; ship small commits.
 - For commit messages use the conventional commits specification: https://www.conventionalcommits.org/en/v1.0.0/ more info here: https://github.com/conventional-commits/conventionalcommits.org/tree/master/content/v1.0.0/index.md
+
+## Committing Changes
+
+When the user asks to commit, use the `committer` script (available on PATH):
+
+```sh
+committer "feat: description of change" file1.ts file2.ts
+```
+
+The script handles staging and committing. Use conventional commit format for the message.
+
+Do NOT manually run `git add` and `git commit` - always use `committer` instead.
 
 ## Formatting
 
