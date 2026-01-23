@@ -4,7 +4,7 @@
  * Setup script to install agent-scripts into a project.
  *
  * Usage (remote - no local clone needed):
- *   bun run https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts
+ *   curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
  *
  * Usage (local):
  *   bun run scripts/setup.ts
@@ -126,7 +126,7 @@ Install agent-scripts tools into a project.
 
 Usage:
   # Remote install (no local clone needed)
-  bun run https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts
+  curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
 
   # Local install
   bun run scripts/setup.ts [options]

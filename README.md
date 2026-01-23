@@ -4,6 +4,23 @@ A collection of TypeScript tools designed for Claude Code to discover and execut
 
 Inspired by [@steipete's agent-scripts](https://github.com/steipete/agent-scripts) - check out his repo for additional patterns and tools.
 
+## Quick Start
+
+Install into your project with a single command:
+
+```sh
+cd /path/to/your-project
+curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
+```
+
+Then add to your `CLAUDE.md`:
+
+```markdown
+@scripts/AGENT_SCRIPTS.md
+```
+
+See [Installation Options](#installation-options) for more configuration.
+
 ## Prerequisites
 
 The following must be installed and available in PATH:
@@ -123,16 +140,7 @@ Invalid workflow: .github/workflows/ci.yml
 
 The validator fetches the schema from [SchemaStore](https://github.com/SchemaStore/schemastore) and uses Ajv for validation.
 
-## Installing to Another Project
-
-### Quick Install (Remote)
-
-No local clone needed - run directly from GitHub:
-
-```sh
-cd /path/to/project
-bun run https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts
-```
+## Installation Options
 
 The setup script will:
 
