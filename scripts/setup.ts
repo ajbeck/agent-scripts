@@ -1,7 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * Setup script to install agent-scripts into a project.
+ * Setup script to install or update agent-scripts in a project.
+ *
+ * Can be re-run to update an existing installation - will overwrite files
+ * while preserving node_modules.
  *
  * Usage (remote - no local clone needed):
  *   curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
@@ -48,6 +51,11 @@ const FILES_TO_DOWNLOAD = [
   "scripts/lib/acli/project.ts",
   "scripts/lib/acli/board.ts",
   "scripts/lib/acli/utils.ts",
+];
+
+const SKILLS_TO_INSTALL = [
+  "skills/acli-jira/SKILL.md",
+  "skills/peekaboo-macos/SKILL.md",
 ];
 
 /**
@@ -97,70 +105,69 @@ interface ProjectConfig {
 
 function generateAgentScriptsMd(config: ProjectConfig): string {
   const project = config.project || "PROJECT_KEY";
-  const types = config.types?.length ? config.types : ["Task", "Bug", "Story"];
 
   const projectSection = config.project
     ? `
 ## Project Settings
 
 - **Default project**: \`${project}\`
-- **Issue types**: ${types.join(", ")}
 - **Common JQL**: \`project = ${project} AND status != Done\`
 `
     : "";
 
   return `# Agent Scripts
 
-TypeScript tools for Jira operations. Uses acli's \`--from-json\` pattern internally.
-
-This is a self-contained folder with its own \`package.json\` and \`node_modules\`.
-You can add \`agent-scripts/\` to your \`.gitignore\` or commit the source files (node_modules is already ignored).
-${projectSection}
-## Usage
+TypeScript interfaces for automation. Import from \`./agent-scripts\`:
 
 \`\`\`typescript
-import { acli, markdownToAdf } from "./agent-scripts";
+import { acli, peekaboo, markdownToAdf } from "./agent-scripts";
+\`\`\`
 
-// Create workitem with markdown (auto-converts to ADF)
-await acli.workitem.create({
-  project: "${project}",
-  type: "${types[0]}",
-  summary: "Task title",
-  descriptionMarkdown: "# Heading\\n\\n**bold** text",
-  labels: ["feature"],
-  customFields: { customfield_10000: { value: "custom" } },
-});
+| Tool            | Purpose                                           | Source                          |
+| --------------- | ------------------------------------------------- | ------------------------------- |
+| \`acli\`          | Jira workitems, projects, boards                  | \`agent-scripts/lib/acli/\`       |
+| \`peekaboo\`      | macOS UI automation (screenshots, clicks, typing) | \`agent-scripts/lib/peekaboo/\`   |
+| \`markdownToAdf\` | Convert markdown to Atlassian Document Format     | \`agent-scripts/lib/md-to-adf.ts\` |
+${projectSection}
+## acli - Jira
 
-// Edit workitem (supports batch editing via key array)
-await acli.workitem.edit({
-  key: "${project}-123", // or ["${project}-123", "${project}-124"] for batch
-  descriptionMarkdown: "Updated description",
-  labelsToAdd: ["done"],
-  labelsToRemove: ["wip"],
-});
-
+\`\`\`typescript
 // Search and view
 const issues = await acli.workitem.search({ jql: "project = ${project}" });
 const issue = await acli.workitem.view("${project}-123");
 
-// Add comment
-await acli.workitem.comment.create({
-  key: "${project}-123",
-  bodyMarkdown: "Comment with **formatting**",
+// Create/edit (use descriptionMarkdown for auto-conversion)
+await acli.workitem.create({
+  project: "${project}",
+  type: "Task",
+  summary: "Title",
+  descriptionMarkdown: "# Desc",
 });
+await acli.workitem.edit({ key: "${project}-123", descriptionMarkdown: "Updated" });
+
+// Comments and transitions
+await acli.workitem.comment.create({ key: "${project}-123", bodyMarkdown: "Comment text" });
+await acli.workitem.transition({ key: "${project}-123", status: "Done" });
 \`\`\`
 
-## Function Reference
+## peekaboo - macOS Automation
 
-| Function                         | Key Options                                                                                         |
-| -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| \`acli.workitem.create()\`       | \`project\`, \`type\`, \`summary\`, \`descriptionMarkdown\`, \`labels[]\`, \`customFields\`         |
-| \`acli.workitem.edit()\`         | \`key\` (string or array), \`descriptionMarkdown\`, \`labelsToAdd[]\`, \`labelsToRemove[]\`, \`customFields\` |
-| \`acli.workitem.search()\`       | \`jql\`, \`filter\`, \`fields\`, \`limit\`                                                          |
-| \`acli.workitem.view()\`         | \`key\`, \`fields\`                                                                                 |
-| \`acli.workitem.transition()\`   | \`key\`, \`status\`                                                                                 |
-| \`acli.workitem.comment.create()\` | \`key\`, \`bodyMarkdown\`                                                                         |
-| \`markdownToAdf()\`              | Returns ADF object from markdown string                                                             |
+\`\`\`typescript
+// Vision and screenshots
+const { data } = await peekaboo.see({ annotate: true }); // Detect UI elements
+await peekaboo.image({ path: "/tmp/screenshot.png" });
+
+// Interaction (use element IDs from see())
+await peekaboo.click({ on: "B1" });
+await peekaboo.type({ text: "Hello" });
+await peekaboo.hotkey({ keys: ["cmd", "c"] });
+
+// Apps and windows
+await peekaboo.app.launch({ name: "Safari" });
+await peekaboo.window.focus({ app: "Safari" });
+\`\`\`
+
+**For full APIs, read the TypeScript source files or use the skills in \`.claude/skills/\`.**
 
 ## Updating
 
@@ -178,9 +185,12 @@ function printHelp() {
   console.log(`
 agent-scripts setup
 
-Install agent-scripts tools into a project as a self-contained folder.
+Install or update agent-scripts tools in a project.
 
-Creates:
+Can be re-run to update an existing installation - will overwrite source files
+while preserving node_modules.
+
+Creates/Updates:
   <target>/agent-scripts/
     ├── package.json      # Dependencies isolated here
     ├── node_modules/     # Not committed (in .gitignore)
@@ -188,12 +198,15 @@ Creates:
     ├── tsconfig.json
     ├── index.ts, acli.ts, ...
     └── lib/...
+  <target>/.claude/skills/
+    ├── acli-jira/SKILL.md
+    └── peekaboo-macos/SKILL.md
 
 Usage:
-  # Remote install (no local clone needed)
+  # Remote install/update (no local clone needed)
   curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
 
-  # Local install
+  # Local install/update
   bun run scripts/setup.ts [options]
 
 Options:
@@ -201,7 +214,7 @@ Options:
   --project <key>     Default Jira project key (e.g., MYPROJECT)
   --types <types>     Comma-separated issue types (e.g., Task,Bug,Story)
   --dry-run           Show what would be done without making changes
-  --skip-deps         Skip dependency installation
+  --skip-deps         Skip dependency installation/update
   --help, -h          Show this help message
 
 Examples:
@@ -258,7 +271,8 @@ async function downloadFile(path: string): Promise<string> {
  */
 async function writeConfigFiles(
   agentScriptsDir: string,
-  dryRun: boolean
+  dryRun: boolean,
+  isUpdate: boolean = false
 ): Promise<void> {
   const files = [
     { name: "package.json", content: generatePackageJson() },
@@ -266,13 +280,16 @@ async function writeConfigFiles(
     { name: ".gitignore", content: generateGitignore() },
   ];
 
+  const verb = isUpdate ? "Updated" : "Created";
+  const wouldVerb = isUpdate ? "Would update" : "Would create";
+
   for (const file of files) {
     const filePath = join(agentScriptsDir, file.name);
     if (dryRun) {
-      console.log(`  Would create: ${file.name}`);
+      console.log(`  ${wouldVerb}: ${file.name}`);
     } else {
       await Bun.write(filePath, file.content);
-      console.log(`  Created: ${file.name}`);
+      console.log(`  ${verb}: ${file.name}`);
     }
   }
 }
@@ -344,17 +361,85 @@ async function downloadFilesFromGithub(
 }
 
 /**
- * Install dependencies
+ * Copy skills from local source to target's .claude/skills/
  */
-async function installDeps(targetDir: string, dryRun: boolean): Promise<void> {
+async function copySkillsFromLocal(
+  sourceDir: string,
+  targetDir: string,
+  dryRun: boolean,
+  isUpdate: boolean = false
+): Promise<void> {
+  const skillsTargetDir = join(targetDir, ".claude/skills");
+  const verb = isUpdate ? "Updating" : "Installing";
+  const pastVerb = isUpdate ? "Updated" : "Installed";
+
+  console.log(`${verb} skills to .claude/skills/...`);
+
+  for (const skillPath of SKILLS_TO_INSTALL) {
+    const skillName = skillPath.split("/")[1]; // e.g., "acli-jira"
+    const srcPath = join(sourceDir, skillPath);
+    const destDir = join(skillsTargetDir, skillName);
+    const destPath = join(destDir, "SKILL.md");
+
+    if (dryRun) {
+      console.log(`  Would ${isUpdate ? "update" : "copy"}: ${skillPath}`);
+    } else {
+      await Bun.$`mkdir -p ${destDir}`.quiet();
+      await Bun.$`cp ${srcPath} ${destPath}`.quiet();
+      console.log(`  ${pastVerb}: ${skillName}`);
+    }
+  }
+}
+
+/**
+ * Download skills from GitHub to target's .claude/skills/
+ */
+async function downloadSkillsFromGithub(
+  targetDir: string,
+  dryRun: boolean,
+  isUpdate: boolean = false
+): Promise<void> {
+  const skillsTargetDir = join(targetDir, ".claude/skills");
+  const verb = isUpdate ? "Updating" : "Downloading";
+  const pastVerb = isUpdate ? "Updated" : "Installed";
+
+  console.log(`${verb} skills from GitHub...`);
+
+  for (const skillPath of SKILLS_TO_INSTALL) {
+    const skillName = skillPath.split("/")[1]; // e.g., "acli-jira"
+    const destDir = join(skillsTargetDir, skillName);
+    const destPath = join(destDir, "SKILL.md");
+
+    if (dryRun) {
+      console.log(`  Would ${isUpdate ? "update" : "download"}: ${skillPath}`);
+    } else {
+      console.log(`  ${verb}: ${skillPath}`);
+      await Bun.$`mkdir -p ${destDir}`.quiet();
+      const content = await downloadFile(skillPath);
+      await Bun.write(destPath, content);
+      console.log(`  ${pastVerb}: ${skillName}`);
+    }
+  }
+}
+
+/**
+ * Install or update dependencies
+ */
+async function installDeps(
+  targetDir: string,
+  dryRun: boolean,
+  isUpdate: boolean = false
+): Promise<void> {
   const deps = DEPENDENCIES.join(" ");
+  const verb = isUpdate ? "Updating" : "Installing";
+
   if (dryRun) {
     console.log(`  Would run: bun add ${deps}`);
     return;
   }
-  console.log(`  Installing: ${deps}`);
+  console.log(`  ${verb}: ${deps}`);
   await Bun.$`cd ${targetDir} && bun add ${DEPENDENCIES}`.quiet();
-  console.log("  Dependencies installed");
+  console.log(`  Dependencies ${isUpdate ? "updated" : "installed"}`);
 }
 
 /**
@@ -363,20 +448,23 @@ async function installDeps(targetDir: string, dryRun: boolean): Promise<void> {
 async function writeDocumentation(
   scriptsDir: string,
   config: ProjectConfig,
-  dryRun: boolean
+  dryRun: boolean,
+  isUpdate: boolean = false
 ): Promise<void> {
   const docPath = join(scriptsDir, "AGENT_SCRIPTS.md");
   const content = generateAgentScriptsMd(config);
+  const verb = isUpdate ? "Updated" : "Created";
+  const wouldVerb = isUpdate ? "Would update" : "Would create";
 
   if (dryRun) {
-    console.log(`  Would create: ${docPath}`);
+    console.log(`  ${wouldVerb}: ${docPath}`);
     if (config.project) {
       console.log(`  With project: ${config.project}`);
       console.log(`  With types: ${config.types?.join(", ") || "Task, Bug, Story"}`);
     }
   } else {
     await Bun.write(docPath, content);
-    console.log(`  Created: ${docPath}`);
+    console.log(`  ${verb}: ${docPath}`);
   }
 }
 
@@ -407,9 +495,19 @@ async function main() {
   const agentScriptsDir = join(absTargetDir, FOLDER_NAME);
   const runningLocally = isRunningLocally();
 
-  console.log(`\nAgent Scripts Setup${dryRun ? " (dry run)" : ""}`);
+  // Detect if this is an update (agent-scripts folder already exists)
+  const isUpdate = existsSync(agentScriptsDir);
+  const action = isUpdate ? "Update" : "Setup";
+  const actionVerb = isUpdate ? "Updating" : "Installing";
+  const actionPast = isUpdate ? "Updated" : "Installed";
+
+  console.log(`\nAgent Scripts ${action}${dryRun ? " (dry run)" : ""}`);
   console.log(`Target: ${agentScriptsDir}`);
-  console.log(`Mode: ${runningLocally ? "local" : "remote"}\n`);
+  console.log(`Mode: ${runningLocally ? "local" : "remote"}`);
+  if (isUpdate) {
+    console.log(`Status: Updating existing installation`);
+  }
+  console.log();
 
   // Ensure target directory exists
   if (!existsSync(absTargetDir)) {
@@ -427,46 +525,62 @@ async function main() {
   }
 
   // Write config files (package.json, tsconfig.json, .gitignore)
-  console.log("Creating config files...");
-  await writeConfigFiles(agentScriptsDir, dryRun);
+  console.log(`${actionVerb} config files...`);
+  await writeConfigFiles(agentScriptsDir, dryRun, isUpdate);
 
   // Get files (local copy or remote download)
   if (runningLocally) {
     const sourceDir = getLocalSourceDir();
     console.log(`\nSource: ${sourceDir}\n`);
     await copyFilesFromLocal(sourceDir, agentScriptsDir, dryRun);
+    await copySkillsFromLocal(sourceDir, absTargetDir, dryRun, isUpdate);
   } else {
     console.log(`\nSource: ${GITHUB_RAW_BASE}\n`);
     await downloadFilesFromGithub(agentScriptsDir, dryRun);
+    await downloadSkillsFromGithub(absTargetDir, dryRun, isUpdate);
   }
 
-  // Install dependencies inside agent-scripts folder
+  // Install/update dependencies inside agent-scripts folder
   if (!skipDeps) {
-    console.log("\nInstalling dependencies...");
-    await installDeps(agentScriptsDir, dryRun);
+    console.log(`\n${actionVerb} dependencies...`);
+    await installDeps(agentScriptsDir, dryRun, isUpdate);
   } else {
-    console.log("\nSkipping dependency installation (--skip-deps)");
+    console.log(`\nSkipping dependency ${isUpdate ? "update" : "installation"} (--skip-deps)`);
   }
 
   // Write documentation
-  console.log("\nCreating documentation...");
-  await writeDocumentation(agentScriptsDir, projectConfig, dryRun);
+  console.log(`\n${actionVerb} documentation...`);
+  await writeDocumentation(agentScriptsDir, projectConfig, dryRun, isUpdate);
 
   // Final instructions
   console.log("\n" + "=".repeat(60));
-  console.log("Setup complete!");
+  console.log(`${action} complete!`);
   console.log("=".repeat(60));
-  console.log(`
+
+  if (isUpdate) {
+    console.log(`
+${actionPast}:
+  ${FOLDER_NAME}/           TypeScript libraries
+  .claude/skills/       On-demand documentation (acli-jira, peekaboo-macos)
+
+All source files have been updated. node_modules preserved.
+`);
+  } else {
+    console.log(`
+${actionPast}:
+  ${FOLDER_NAME}/           TypeScript libraries
+  .claude/skills/       On-demand documentation (acli-jira, peekaboo-macos)
+
 Next steps:
 1. Add to your CLAUDE.md:
    @${FOLDER_NAME}/AGENT_SCRIPTS.md
 
 2. Import and use:
-   import { acli } from "./${FOLDER_NAME}";
+   import { acli, peekaboo } from "./${FOLDER_NAME}";
 
-3. Or run CLI directly:
-   bun run ${FOLDER_NAME}/acli.ts workitem view TEAM-123
+3. Skills load automatically when Claude needs detailed API reference.
 `);
+  }
 }
 
 main().catch((err) => {

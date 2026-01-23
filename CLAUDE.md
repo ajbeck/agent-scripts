@@ -223,58 +223,62 @@ gh api repos/owner/repo/contents/path/to/file
 
 Break implementation into small discrete tasks to avoid AWS Bedrock output token limits. Use TodoWrite to track progress and complete one task at a time before moving to the next.
 
-## ACLI TypeScript Interface
+## Agent Scripts
 
-Use the `acli` library in `scripts/lib/` to interact with Jira programmatically.
+TypeScript interfaces for automation. Import from `./scripts`:
 
 ```typescript
-import { acli } from "./scripts";
+import { acli, peekaboo, markdownToAdf } from "./scripts";
+```
 
-// Search workitems
-const result = await acli.workitem.search({ jql: "project = TEAM" });
+| Tool            | Purpose                                           | Source                     |
+| --------------- | ------------------------------------------------- | -------------------------- |
+| `acli`          | Jira workitems, projects, boards                  | `scripts/lib/acli/`        |
+| `peekaboo`      | macOS UI automation (screenshots, clicks, typing) | `scripts/lib/peekaboo/`    |
+| `markdownToAdf` | Convert markdown to Atlassian Document Format     | `scripts/lib/md-to-adf.ts` |
 
-// View a workitem
+### acli - Jira
+
+```typescript
+// Search and view
+const issues = await acli.workitem.search({ jql: "project = TEAM" });
 const issue = await acli.workitem.view("TEAM-123");
 
-// Create a workitem with markdown description (auto-converts to ADF)
+// Create/edit (use descriptionMarkdown for auto-conversion)
 await acli.workitem.create({
   project: "TEAM",
   type: "Task",
-  summary: "New task",
-  descriptionMarkdown: "# Overview\n\nThis is **bold** text.",
+  summary: "Title",
+  descriptionMarkdown: "# Desc",
 });
+await acli.workitem.edit({ key: "TEAM-123", descriptionMarkdown: "Updated" });
 
-// Edit with markdown
-await acli.workitem.edit({
-  key: "TEAM-123",
-  descriptionMarkdown: "Updated description with *italic* text.",
-});
-
-// Add a comment with markdown
+// Comments and transitions
 await acli.workitem.comment.create({
   key: "TEAM-123",
-  bodyMarkdown: "- Item 1\n- Item 2\n- Item 3",
+  bodyMarkdown: "Comment text",
 });
-
-// Transition a workitem
 await acli.workitem.transition({ key: "TEAM-123", status: "Done" });
-
-// List projects
-const projects = await acli.project.list();
-
-// Search boards
-const boards = await acli.board.search({ project: "TEAM" });
 ```
 
-### Markdown to ADF Conversion
-
-The `descriptionMarkdown` and `bodyMarkdown` options automatically convert markdown to ADF. You can also use the converter directly:
+### peekaboo - macOS Automation
 
 ```typescript
-import { markdownToAdf } from "./scripts";
+// Vision and screenshots
+const { data } = await peekaboo.see({ annotate: true }); // Detect UI elements
+await peekaboo.image({ path: "/tmp/screenshot.png" });
 
-const adf = markdownToAdf("# Hello\n\n**bold** text");
+// Interaction (use element IDs from see())
+await peekaboo.click({ on: "B1" });
+await peekaboo.type({ text: "Hello" });
+await peekaboo.hotkey({ keys: ["cmd", "c"] });
+
+// Apps and windows
+await peekaboo.app.launch({ name: "Safari" });
+await peekaboo.window.focus({ app: "Safari" });
 ```
+
+**For full APIs, read the TypeScript source files or use the skills in `.claude/skills/`.**
 
 ## Installing to Other Projects
 

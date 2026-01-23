@@ -13,7 +13,10 @@ cd /path/to/your-project
 curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
 ```
 
-This creates a self-contained `agent-scripts/` folder with its own `package.json` and `node_modules`.
+This creates:
+
+- `agent-scripts/` - Self-contained folder with TypeScript libraries
+- `.claude/skills/` - On-demand documentation that Claude loads when needed
 
 Then add to your `CLAUDE.md`:
 
@@ -27,14 +30,77 @@ See [Installation Options](#installation-options) for more configuration.
 
 The following must be installed and available in PATH:
 
-| Tool                                      | Required | Purpose                              |
-| ----------------------------------------- | -------- | ------------------------------------ |
-| [Bun](https://bun.sh)                     | Yes      | JavaScript/TypeScript runtime        |
-| [Node.js/npm](https://nodejs.org)         | Yes      | Package management, npx              |
-| [acli](https://github.com/atlassian/acli) | Yes      | Atlassian CLI for Jira integration   |
-| [prettier](https://prettier.io)           | Optional | Markdown formatting (or use via npx) |
+| Tool                                             | Required             | Purpose                              |
+| ------------------------------------------------ | -------------------- | ------------------------------------ |
+| [Bun](https://bun.sh)                            | Yes                  | JavaScript/TypeScript runtime        |
+| [Node.js/npm](https://nodejs.org)                | Yes                  | Package management, npx              |
+| [acli](https://github.com/atlassian/acli)        | For Jira             | Atlassian CLI for Jira integration   |
+| [peekaboo](https://github.com/steipete/peekaboo) | For macOS automation | macOS UI automation CLI              |
+| [prettier](https://prettier.io)                  | Optional             | Markdown formatting (or use via npx) |
 
 ## Available Tools
+
+| Tool            | Purpose                                           | Source                     |
+| --------------- | ------------------------------------------------- | -------------------------- |
+| `acli`          | Jira workitems, projects, boards                  | `scripts/lib/acli/`        |
+| `peekaboo`      | macOS UI automation (screenshots, clicks, typing) | `scripts/lib/peekaboo/`    |
+| `markdownToAdf` | Convert markdown to Atlassian Document Format     | `scripts/lib/md-to-adf.ts` |
+
+### ACLI Jira Interface
+
+TypeScript interface for the `acli` CLI tool with automatic markdown-to-ADF conversion.
+
+```typescript
+import { acli } from "./agent-scripts";
+
+// Search and view
+const issues = await acli.workitem.search({ jql: "project = TEAM" });
+const issue = await acli.workitem.view("TEAM-123");
+
+// Create/edit (use descriptionMarkdown for auto-conversion)
+await acli.workitem.create({
+  project: "TEAM",
+  type: "Task",
+  summary: "Title",
+  descriptionMarkdown: "# Desc",
+});
+await acli.workitem.edit({ key: "TEAM-123", descriptionMarkdown: "Updated" });
+
+// Comments and transitions
+await acli.workitem.comment.create({
+  key: "TEAM-123",
+  bodyMarkdown: "Comment",
+});
+await acli.workitem.transition({ key: "TEAM-123", status: "Done" });
+```
+
+CLI usage:
+
+```sh
+bun run agent-scripts/acli.ts workitem view TEAM-123
+bun run agent-scripts/acli.ts workitem search --jql "project = TEAM"
+```
+
+### Peekaboo macOS Automation
+
+TypeScript interface for macOS UI automation via the `peekaboo` CLI.
+
+```typescript
+import { peekaboo } from "./agent-scripts";
+
+// Vision and screenshots
+const { data } = await peekaboo.see({ annotate: true }); // Detect UI elements
+await peekaboo.image({ path: "/tmp/screenshot.png" });
+
+// Interaction (use element IDs from see())
+await peekaboo.click({ on: "B1" });
+await peekaboo.type({ text: "Hello" });
+await peekaboo.hotkey({ keys: ["cmd", "c"] });
+
+// Apps and windows
+await peekaboo.app.launch({ name: "Safari" });
+await peekaboo.window.focus({ app: "Safari" });
+```
 
 ### Markdown to ADF Converter
 
@@ -53,123 +119,30 @@ echo "# Hello" | bun run agent-scripts/md-to-adf.ts
 bun run agent-scripts/md-to-adf.ts --input README.md
 ```
 
-### ACLI Jira Interface
-
-TypeScript interface for the `acli` CLI tool with automatic markdown-to-ADF conversion. Uses acli's `--from-json` pattern internally for create/edit operations, enabling custom fields and batch editing.
-
-```typescript
-import { acli } from "./agent-scripts";
-
-// Create workitem with markdown (auto-converts to ADF)
-await acli.workitem.create({
-  project: "TEAM",
-  type: "Task",
-  summary: "New task",
-  descriptionMarkdown: "# Overview\n\nThis is **bold** text.",
-  customFields: { customfield_10000: { value: "custom value" } },
-});
-
-// Edit workitem (supports batch editing)
-await acli.workitem.edit({
-  key: "TEAM-123", // or ["TEAM-123", "TEAM-124"] for batch
-  descriptionMarkdown: "# Updated\n\nNew description.",
-  labelsToAdd: ["feature"],
-  labelsToRemove: ["wip"],
-});
-
-// Search workitems
-const issues = await acli.workitem.search({ jql: "project = TEAM" });
-
-// Add comment with markdown
-await acli.workitem.comment.create({
-  key: "TEAM-123",
-  bodyMarkdown: "- Item 1\n- Item 2",
-});
-```
-
-#### CLI Usage
-
-Scripts are also directly executable:
-
-```sh
-# View a workitem
-bun run agent-scripts/acli.ts workitem view TEAM-123
-
-# Search workitems
-bun run agent-scripts/acli.ts workitem search --jql "project = TEAM" --limit 10
-
-# Create a workitem
-bun run agent-scripts/acli.ts workitem create --project TEAM --type Task --summary "New task"
-
-# Edit a workitem
-bun run agent-scripts/acli.ts workitem edit --key TEAM-123 --summary "Updated title"
-```
-
-#### How it works
-
-1. Markdown is converted to ADF in-memory via `markdownToAdf()`
-2. A JSON payload is built with the ADF object (not stringified)
-3. Payload is written to a temp file (`/tmp/acli-{timestamp}.json`)
-4. `acli jira workitem <cmd> --from-json <path>` is executed
-5. Temp file is cleaned up (even on error)
-
 ### GitHub Workflow Validator
 
 Validate GitHub Actions workflow YAML files against the official JSON schema.
 
 ```sh
 bun run agent-scripts/validate-workflow.ts .github/workflows/ci.yml
-bun run agent-scripts/validate-workflow.ts workflow.yaml
 ```
-
-On success:
-
-```
-Valid workflow: .github/workflows/ci.yml
-```
-
-On failure:
-
-```
-Validation failed!
-
-  Path: /jobs/build/steps/0
-  Error: must have required property 'run'
-  Details: {"missingProperty":"run"}
-
-Invalid workflow: .github/workflows/ci.yml
-```
-
-The validator fetches the schema from [SchemaStore](https://github.com/SchemaStore/schemastore) and uses Ajv for validation.
 
 ## Installation Options
 
-The setup script creates a self-contained `agent-scripts/` folder:
+The setup script creates a self-contained installation:
 
 ```
 your-project/
-└── agent-scripts/
-    ├── package.json      # Dependencies isolated here
-    ├── node_modules/     # Ignored by .gitignore
-    ├── .gitignore
-    ├── tsconfig.json
-    ├── index.ts
-    ├── acli.ts
-    ├── md-to-adf.ts
-    ├── validate-workflow.ts
-    ├── AGENT_SCRIPTS.md
-    └── lib/...
-```
-
-This avoids conflicts with your project's existing `package.json` and `node_modules`.
-
-### Local Install
-
-If you have the repo cloned locally:
-
-```sh
-cd /path/to/project
-bun run /path/to/agent-scripts/scripts/setup.ts
+├── agent-scripts/
+│   ├── package.json        # Dependencies isolated here
+│   ├── node_modules/       # Ignored by .gitignore
+│   ├── AGENT_SCRIPTS.md    # Concise documentation for CLAUDE.md
+│   ├── index.ts
+│   └── lib/...
+└── .claude/
+    └── skills/             # On-demand detailed documentation
+        ├── acli-jira/SKILL.md
+        └── peekaboo-macos/SKILL.md
 ```
 
 ### Options
@@ -190,53 +163,50 @@ bun run setup.ts --skip-deps                        # Skip dependency installati
 | `--dry-run`       | Preview changes without making them                |
 | `--skip-deps`     | Skip dependency installation                       |
 
-### After Installation
-
-Add to your project's `CLAUDE.md`:
-
-```markdown
-@agent-scripts/AGENT_SCRIPTS.md
-```
-
-Import and use:
-
-```typescript
-import { acli } from "./agent-scripts";
-```
-
-Or run CLI directly:
-
-```sh
-bun run agent-scripts/acli.ts workitem view TEAM-123
-```
-
 ### Updating
 
-To update to the latest version:
+Re-run the setup script to update an existing installation:
 
 ```sh
+# Remote update
+curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
+
+# Or use the self-update script
 bun run agent-scripts/selfUpdate.ts
 ```
 
-Use `--dry-run` to preview changes without applying them.
+The script detects existing installations and updates all source files while preserving `node_modules`.
 
-## CLAUDE.md Configuration
+## Documentation Architecture
 
-The setup script creates `agent-scripts/AGENT_SCRIPTS.md` with full documentation. Reference it in your project's `CLAUDE.md`:
+This project follows Anthropic's [best practices for CLAUDE.md](https://code.claude.com/docs/en/best-practices):
 
-```markdown
-@agent-scripts/AGENT_SCRIPTS.md
-```
+### Two-Tier Documentation
 
-You can also add project-specific settings:
+1. **AGENT_SCRIPTS.md** (always loaded via `@agent-scripts/AGENT_SCRIPTS.md`)
+   - Concise reference (~60 lines)
+   - Import statements and quick examples
+   - Enough for common operations
 
-```markdown
-### Project Settings
+2. **Skills** (loaded on-demand by Claude when needed)
+   - Full API documentation
+   - Detailed examples and edge cases
+   - Located in `.claude/skills/`
 
-- Default Jira project: `MYPROJECT`
-- Issue types: Task, Bug, Story
-- Common JQL: `project = MYPROJECT AND status != Done`
-```
+### Why This Approach?
+
+- **Context efficiency**: CLAUDE.md should be under 500 lines total
+- **On-demand loading**: Claude loads skills only when working with specific tools
+- **Progressive disclosure**: Quick reference for simple tasks, detailed docs when needed
+
+### Skills Reference
+
+| Skill            | Description               | Triggers                                      |
+| ---------------- | ------------------------- | --------------------------------------------- |
+| `acli-jira`      | Full Jira API reference   | Working with Jira workitems, projects, boards |
+| `peekaboo-macos` | Full macOS automation API | UI automation, screenshots, app control       |
+
+Claude automatically loads relevant skills based on the task context.
 
 ## How It Works
 
@@ -246,6 +216,7 @@ This follows the "code execution with MCP" pattern from Anthropic:
 2. **On-Demand Loading**: Only imports the functions needed for the current task
 3. **Code Execution**: Claude writes TypeScript to call tools, allowing data transformation and control flow
 4. **Skill Reuse**: Functions in `agent-scripts/lib/` act as reusable skills
+5. **Two-Tier Docs**: Concise always-on docs + detailed on-demand skills
 
 ## Development
 
@@ -268,4 +239,5 @@ echo "# Test" | bun run scripts/md-to-adf.ts
 - [@atlaskit/editor-json-transformer](https://www.npmjs.com/package/@atlaskit/editor-json-transformer) - ProseMirror to ADF JSON
 - [ajv](https://www.npmjs.com/package/ajv) - JSON schema validator
 - [ajv-formats](https://www.npmjs.com/package/ajv-formats) - Format validators for Ajv
-- [acli](https://github.com/atlassian/acli) - Atlassian CLI (must be installed separately and in PATH)
+- [acli](https://github.com/atlassian/acli) - Atlassian CLI (external, must be in PATH)
+- [peekaboo](https://github.com/steipete/peekaboo) - macOS automation CLI (external, must be in PATH)
