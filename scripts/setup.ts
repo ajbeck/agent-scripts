@@ -24,6 +24,8 @@ import { existsSync } from "fs";
 const GITHUB_RAW_BASE =
   "https://raw.githubusercontent.com/ajbeck/agent-scripts/main";
 
+const FOLDER_NAME = "agent-scripts";
+
 const DEPENDENCIES = [
   "@atlaskit/adf-schema",
   "@atlaskit/editor-json-transformer",
@@ -37,6 +39,7 @@ const FILES_TO_DOWNLOAD = [
   "scripts/md-to-adf.ts",
   "scripts/acli.ts",
   "scripts/validate-workflow.ts",
+  "scripts/selfUpdate.ts",
   "scripts/lib/index.ts",
   "scripts/lib/md-to-adf.ts",
   "scripts/lib/acli/index.ts",
@@ -46,6 +49,46 @@ const FILES_TO_DOWNLOAD = [
   "scripts/lib/acli/board.ts",
   "scripts/lib/acli/utils.ts",
 ];
+
+/**
+ * Generate package.json for the self-contained agent-scripts folder
+ */
+function generatePackageJson(): string {
+  const pkg = {
+    name: "agent-scripts",
+    version: "1.0.0",
+    private: true,
+    type: "module",
+  };
+  return JSON.stringify(pkg, null, 2);
+}
+
+/**
+ * Generate tsconfig.json for TypeScript resolution
+ */
+function generateTsConfig(): string {
+  const config = {
+    compilerOptions: {
+      target: "ESNext",
+      module: "ESNext",
+      moduleResolution: "bundler",
+      esModuleInterop: true,
+      strict: true,
+      skipLibCheck: true,
+      types: ["bun-types"],
+    },
+  };
+  return JSON.stringify(config, null, 2);
+}
+
+/**
+ * Generate .gitignore for the agent-scripts folder
+ */
+function generateGitignore(): string {
+  return `node_modules/
+`
+;
+}
 
 interface ProjectConfig {
   project?: string;
@@ -69,11 +112,14 @@ function generateAgentScriptsMd(config: ProjectConfig): string {
   return `# Agent Scripts
 
 TypeScript tools for Jira operations. Uses acli's \`--from-json\` pattern internally.
+
+This is a self-contained folder with its own \`package.json\` and \`node_modules\`.
+You can add \`agent-scripts/\` to your \`.gitignore\` or commit the source files (node_modules is already ignored).
 ${projectSection}
 ## Usage
 
 \`\`\`typescript
-import { acli, markdownToAdf } from "./scripts";
+import { acli, markdownToAdf } from "./agent-scripts";
 
 // Create workitem with markdown (auto-converts to ADF)
 await acli.workitem.create({
@@ -115,6 +161,16 @@ await acli.workitem.comment.create({
 | \`acli.workitem.transition()\`   | \`key\`, \`status\`                                                                                 |
 | \`acli.workitem.comment.create()\` | \`key\`, \`bodyMarkdown\`                                                                         |
 | \`markdownToAdf()\`              | Returns ADF object from markdown string                                                             |
+
+## Updating
+
+To update to the latest version from GitHub:
+
+\`\`\`sh
+bun run agent-scripts/selfUpdate.ts
+\`\`\`
+
+Use \`--dry-run\` to preview changes without applying them.
 `;
 }
 
@@ -122,7 +178,16 @@ function printHelp() {
   console.log(`
 agent-scripts setup
 
-Install agent-scripts tools into a project.
+Install agent-scripts tools into a project as a self-contained folder.
+
+Creates:
+  <target>/agent-scripts/
+    ├── package.json      # Dependencies isolated here
+    ├── node_modules/     # Not committed (in .gitignore)
+    ├── .gitignore
+    ├── tsconfig.json
+    ├── index.ts, acli.ts, ...
+    └── lib/...
 
 Usage:
   # Remote install (no local clone needed)
@@ -189,21 +254,26 @@ async function downloadFile(path: string): Promise<string> {
 }
 
 /**
- * Ensure package.json exists, run bun init if not
+ * Write config files (package.json, tsconfig.json, .gitignore) inside agent-scripts folder
  */
-async function ensurePackageJson(
-  targetDir: string,
+async function writeConfigFiles(
+  agentScriptsDir: string,
   dryRun: boolean
 ): Promise<void> {
-  const pkgPath = join(targetDir, "package.json");
-  const exists = await Bun.file(pkgPath).exists();
+  const files = [
+    { name: "package.json", content: generatePackageJson() },
+    { name: "tsconfig.json", content: generateTsConfig() },
+    { name: ".gitignore", content: generateGitignore() },
+  ];
 
-  if (!exists) {
-    console.log("No package.json found, initializing with bun...");
-    if (!dryRun) {
-      await Bun.$`cd ${targetDir} && bun init -y`.quiet();
+  for (const file of files) {
+    const filePath = join(agentScriptsDir, file.name);
+    if (dryRun) {
+      console.log(`  Would create: ${file.name}`);
+    } else {
+      await Bun.write(filePath, file.content);
+      console.log(`  Created: ${file.name}`);
     }
-    console.log("  Created package.json");
   }
 }
 
@@ -230,7 +300,7 @@ async function copyFilesFromLocal(
   }
 
   // Copy top-level files
-  for (const file of ["index.ts", "md-to-adf.ts", "acli.ts", "validate-workflow.ts"]) {
+  for (const file of ["index.ts", "md-to-adf.ts", "acli.ts", "validate-workflow.ts", "selfUpdate.ts"]) {
     const src = join(sourceDir, "scripts", file);
     const dest = join(scriptsDir, file);
     console.log(`Copying scripts/${file}...`);
@@ -334,11 +404,11 @@ async function main() {
   const projectConfig: ProjectConfig = { project, types };
 
   const absTargetDir = resolve(targetDir);
-  const scriptsDir = join(absTargetDir, "scripts");
+  const agentScriptsDir = join(absTargetDir, FOLDER_NAME);
   const runningLocally = isRunningLocally();
 
   console.log(`\nAgent Scripts Setup${dryRun ? " (dry run)" : ""}`);
-  console.log(`Target: ${absTargetDir}`);
+  console.log(`Target: ${agentScriptsDir}`);
   console.log(`Mode: ${runningLocally ? "local" : "remote"}\n`);
 
   // Ensure target directory exists
@@ -351,35 +421,36 @@ async function main() {
     }
   }
 
-  // Ensure package.json exists (runs bun init if needed)
-  await ensurePackageJson(absTargetDir, dryRun);
-
-  // Create scripts directory
+  // Create agent-scripts directory
   if (!dryRun) {
-    await Bun.$`mkdir -p ${scriptsDir}`.quiet();
+    await Bun.$`mkdir -p ${agentScriptsDir}`.quiet();
   }
+
+  // Write config files (package.json, tsconfig.json, .gitignore)
+  console.log("Creating config files...");
+  await writeConfigFiles(agentScriptsDir, dryRun);
 
   // Get files (local copy or remote download)
   if (runningLocally) {
     const sourceDir = getLocalSourceDir();
-    console.log(`Source: ${sourceDir}\n`);
-    await copyFilesFromLocal(sourceDir, scriptsDir, dryRun);
+    console.log(`\nSource: ${sourceDir}\n`);
+    await copyFilesFromLocal(sourceDir, agentScriptsDir, dryRun);
   } else {
-    console.log(`Source: ${GITHUB_RAW_BASE}\n`);
-    await downloadFilesFromGithub(scriptsDir, dryRun);
+    console.log(`\nSource: ${GITHUB_RAW_BASE}\n`);
+    await downloadFilesFromGithub(agentScriptsDir, dryRun);
   }
 
-  // Install dependencies
+  // Install dependencies inside agent-scripts folder
   if (!skipDeps) {
     console.log("\nInstalling dependencies...");
-    await installDeps(absTargetDir, dryRun);
+    await installDeps(agentScriptsDir, dryRun);
   } else {
     console.log("\nSkipping dependency installation (--skip-deps)");
   }
 
   // Write documentation
   console.log("\nCreating documentation...");
-  await writeDocumentation(scriptsDir, projectConfig, dryRun);
+  await writeDocumentation(agentScriptsDir, projectConfig, dryRun);
 
   // Final instructions
   console.log("\n" + "=".repeat(60));
@@ -388,10 +459,13 @@ async function main() {
   console.log(`
 Next steps:
 1. Add to your CLAUDE.md:
-   @scripts/AGENT_SCRIPTS.md
+   @${FOLDER_NAME}/AGENT_SCRIPTS.md
 
 2. Import and use:
-   import { acli } from "./scripts";
+   import { acli } from "./${FOLDER_NAME}";
+
+3. Or run CLI directly:
+   bun run ${FOLDER_NAME}/acli.ts workitem view TEAM-123
 `);
 }
 

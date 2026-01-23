@@ -13,10 +13,12 @@ cd /path/to/your-project
 curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run -
 ```
 
+This creates a self-contained `agent-scripts/` folder with its own `package.json` and `node_modules`.
+
 Then add to your `CLAUDE.md`:
 
 ```markdown
-@scripts/AGENT_SCRIPTS.md
+@agent-scripts/AGENT_SCRIPTS.md
 ```
 
 See [Installation Options](#installation-options) for more configuration.
@@ -39,7 +41,7 @@ The following must be installed and available in PATH:
 Convert Markdown to Atlassian Document Format (ADF) for Jira/Confluence.
 
 ```typescript
-import { markdownToAdf } from "./scripts";
+import { markdownToAdf } from "./agent-scripts";
 
 const adf = markdownToAdf("# Hello\n\n**bold** text");
 ```
@@ -47,8 +49,8 @@ const adf = markdownToAdf("# Hello\n\n**bold** text");
 CLI usage:
 
 ```sh
-echo "# Hello" | bun run scripts/md-to-adf.ts
-bun run scripts/md-to-adf.ts --input README.md
+echo "# Hello" | bun run agent-scripts/md-to-adf.ts
+bun run agent-scripts/md-to-adf.ts --input README.md
 ```
 
 ### ACLI Jira Interface
@@ -56,7 +58,7 @@ bun run scripts/md-to-adf.ts --input README.md
 TypeScript interface for the `acli` CLI tool with automatic markdown-to-ADF conversion. Uses acli's `--from-json` pattern internally for create/edit operations, enabling custom fields and batch editing.
 
 ```typescript
-import { acli } from "./scripts";
+import { acli } from "./agent-scripts";
 
 // Create workitem with markdown (auto-converts to ADF)
 await acli.workitem.create({
@@ -91,16 +93,16 @@ Scripts are also directly executable:
 
 ```sh
 # View a workitem
-./scripts/acli.ts workitem view TEAM-123
+bun run agent-scripts/acli.ts workitem view TEAM-123
 
 # Search workitems
-./scripts/acli.ts workitem search --jql "project = TEAM" --limit 10
+bun run agent-scripts/acli.ts workitem search --jql "project = TEAM" --limit 10
 
 # Create a workitem
-./scripts/acli.ts workitem create --project TEAM --type Task --summary "New task"
+bun run agent-scripts/acli.ts workitem create --project TEAM --type Task --summary "New task"
 
 # Edit a workitem
-./scripts/acli.ts workitem edit --key TEAM-123 --summary "Updated title"
+bun run agent-scripts/acli.ts workitem edit --key TEAM-123 --summary "Updated title"
 ```
 
 #### How it works
@@ -116,8 +118,8 @@ Scripts are also directly executable:
 Validate GitHub Actions workflow YAML files against the official JSON schema.
 
 ```sh
-./scripts/validate-workflow.ts .github/workflows/ci.yml
-./scripts/validate-workflow.ts workflow.yaml
+bun run agent-scripts/validate-workflow.ts .github/workflows/ci.yml
+bun run agent-scripts/validate-workflow.ts workflow.yaml
 ```
 
 On success:
@@ -142,12 +144,24 @@ The validator fetches the schema from [SchemaStore](https://github.com/SchemaSto
 
 ## Installation Options
 
-The setup script will:
+The setup script creates a self-contained `agent-scripts/` folder:
 
-- Run `bun init` if no package.json exists
-- Download all required files from GitHub
-- Install dependencies
-- Create `scripts/AGENT_SCRIPTS.md` documentation
+```
+your-project/
+└── agent-scripts/
+    ├── package.json      # Dependencies isolated here
+    ├── node_modules/     # Ignored by .gitignore
+    ├── .gitignore
+    ├── tsconfig.json
+    ├── index.ts
+    ├── acli.ts
+    ├── md-to-adf.ts
+    ├── validate-workflow.ts
+    ├── AGENT_SCRIPTS.md
+    └── lib/...
+```
+
+This avoids conflicts with your project's existing `package.json` and `node_modules`.
 
 ### Local Install
 
@@ -181,21 +195,37 @@ bun run setup.ts --skip-deps                        # Skip dependency installati
 Add to your project's `CLAUDE.md`:
 
 ```markdown
-@scripts/AGENT_SCRIPTS.md
+@agent-scripts/AGENT_SCRIPTS.md
 ```
 
 Import and use:
 
 ```typescript
-import { acli } from "./scripts";
+import { acli } from "./agent-scripts";
 ```
+
+Or run CLI directly:
+
+```sh
+bun run agent-scripts/acli.ts workitem view TEAM-123
+```
+
+### Updating
+
+To update to the latest version:
+
+```sh
+bun run agent-scripts/selfUpdate.ts
+```
+
+Use `--dry-run` to preview changes without applying them.
 
 ## CLAUDE.md Configuration
 
-The setup script creates `scripts/AGENT_SCRIPTS.md` with full documentation. Reference it in your project's `CLAUDE.md`:
+The setup script creates `agent-scripts/AGENT_SCRIPTS.md` with full documentation. Reference it in your project's `CLAUDE.md`:
 
 ```markdown
-@scripts/AGENT_SCRIPTS.md
+@agent-scripts/AGENT_SCRIPTS.md
 ```
 
 You can also add project-specific settings:
@@ -212,10 +242,10 @@ You can also add project-specific settings:
 
 This follows the "code execution with MCP" pattern from Anthropic:
 
-1. **Progressive Disclosure**: Claude discovers tools by reading `scripts/lib/` rather than loading all definitions upfront
+1. **Progressive Disclosure**: Claude discovers tools by reading `agent-scripts/lib/` rather than loading all definitions upfront
 2. **On-Demand Loading**: Only imports the functions needed for the current task
 3. **Code Execution**: Claude writes TypeScript to call tools, allowing data transformation and control flow
-4. **Skill Reuse**: Functions in `scripts/lib/` act as reusable skills
+4. **Skill Reuse**: Functions in `agent-scripts/lib/` act as reusable skills
 
 ## Development
 
