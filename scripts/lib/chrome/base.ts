@@ -1,26 +1,30 @@
 /**
  * Chrome DevTools MCP Base
  *
- * Runtime setup and proxy management for chrome-devtools-mcp via mcporter
+ * Runtime setup for chrome-devtools-mcp via mcporter
  */
 
-import { createRuntime, createServerProxy } from "mcporter";
+import { createRuntime } from "mcporter";
 
 type Runtime = Awaited<ReturnType<typeof createRuntime>>;
-type ServerProxy = ReturnType<typeof createServerProxy>;
 
 let runtime: Runtime | null = null;
-let proxy: ServerProxy | null = null;
 
 /**
- * Get or create the Chrome DevTools proxy
+ * Convert camelCase to snake_case for chrome-devtools-mcp tool names
  */
-export async function getChrome(): Promise<ServerProxy> {
+function toSnakeCase(str: string): string {
+  return str.replace(/([a-z\d])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+/**
+ * Get or create the Chrome DevTools runtime
+ */
+export async function getChrome(): Promise<Runtime> {
   if (!runtime) {
     runtime = await createRuntime();
-    proxy = createServerProxy(runtime, "chrome-devtools");
   }
-  return proxy!;
+  return runtime;
 }
 
 /**
@@ -34,7 +38,6 @@ export async function closeChrome(): Promise<void> {
       // Ignore close errors
     }
     runtime = null;
-    proxy = null;
   }
 }
 
@@ -45,11 +48,40 @@ export async function chromeExec<T = unknown>(
   toolName: string,
   params: Record<string, unknown> = {}
 ): Promise<T> {
-  const chrome = await getChrome();
-  const tool = (chrome as Record<string, Function>)[toolName];
-  if (!tool) {
-    throw new Error(`Unknown Chrome DevTools tool: ${toolName}`);
+  // Ensure runtime is created
+  if (!runtime) {
+    runtime = await createRuntime();
   }
-  const result = await tool(params);
-  return result as T;
+
+  // Convert camelCase toolName to snake_case for the actual MCP call
+  const snakeCaseName = toSnakeCase(toolName);
+
+  // Call tool directly on runtime
+  const result = (await runtime.callTool("chrome-devtools", snakeCaseName, {
+    args: params,
+  })) as {
+    content?: Array<{ type: string; text?: string }>;
+    isError?: boolean;
+  };
+
+  // Handle errors
+  if (result.isError) {
+    const errorText =
+      result.content?.find((c) => c.type === "text")?.text || "Unknown error";
+    throw new Error(`Chrome DevTools error: ${errorText}`);
+  }
+
+  // Extract text content
+  const textContent = result.content?.find((c) => c.type === "text")?.text;
+  if (!textContent) {
+    return result as T;
+  }
+
+  // Try to parse as JSON
+  try {
+    return JSON.parse(textContent) as T;
+  } catch {
+    // Return as text if not JSON
+    return textContent as T;
+  }
 }
