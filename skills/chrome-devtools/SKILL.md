@@ -13,10 +13,27 @@ import { chrome, quickScreenshot, navigateAndScreenshot } from "./agent-scripts"
 
 ## Quick Start - Recommended Patterns
 
-### One-liner Screenshot (Simplest)
+### Capture and Review (Best for Agents)
 
 ```typescript
-// Takes screenshot, browser cleans up automatically
+// Capture webpage to managed temp file, browser cleans up automatically
+const capture = await capturePageForReview({ url: "https://example.com" });
+
+// Agent reads capture.path with Read tool...
+
+// Clean up when done reviewing
+await capture.cleanup();
+```
+
+**Features:**
+- Browser and temp files are automatically managed
+- Old screenshots (>5 min) auto-cleaned on each capture
+- Explicit cleanup when done reviewing
+
+### One-liner Screenshot (Manual Path)
+
+```typescript
+// Takes screenshot to your path, browser cleans up automatically
 await quickScreenshot("https://example.com", "/tmp/shot.png");
 ```
 

@@ -31,6 +31,8 @@ export {
   withBrowser,
   quickScreenshot,
   ensureCleanState,
+  capturePageForReview,
+  cleanupScreenshots,
 } from "./convenience";
 
 // Type exports
@@ -92,10 +94,12 @@ export const chrome = {
   navigateAndScreenshot: convenience.navigateAndScreenshot,
   navigateAndSnapshot: convenience.navigateAndSnapshot,
   quickScreenshot: convenience.quickScreenshot,
+  capturePageForReview: convenience.capturePageForReview,
   withBrowser: convenience.withBrowser,
 
   // Cleanup
   closeAllPages: convenience.closeAllPages,
+  cleanupScreenshots: convenience.cleanupScreenshots,
   close: closeChrome,
   quit: convenience.quitBrowser,
   ensureClean: convenience.ensureCleanState,

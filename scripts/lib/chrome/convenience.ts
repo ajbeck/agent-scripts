@@ -9,6 +9,50 @@ import { chromeExec, closeChrome } from "./base";
 import { navigate, listPages, closePage, waitFor } from "./navigation";
 import { screenshot, snapshot } from "./debugging";
 import type { TakeScreenshotParams } from "./types";
+import { randomUUID } from "crypto";
+import { unlink, readdir, stat } from "fs/promises";
+import { join } from "path";
+
+// Temp directory for managed screenshots
+const SCREENSHOT_DIR = "/tmp/agent-screenshots";
+
+/**
+ * Ensure screenshot directory exists
+ */
+async function ensureScreenshotDir(): Promise<void> {
+  try {
+    const { $ } = await import("bun");
+    await $`mkdir -p ${SCREENSHOT_DIR}`.quiet();
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * Clean up old screenshots (older than maxAgeMs)
+ */
+async function cleanupOldScreenshots(maxAgeMs = 5 * 60 * 1000): Promise<number> {
+  let cleaned = 0;
+  try {
+    const files = await readdir(SCREENSHOT_DIR);
+    const now = Date.now();
+    for (const file of files) {
+      const filePath = join(SCREENSHOT_DIR, file);
+      try {
+        const stats = await stat(filePath);
+        if (now - stats.mtimeMs > maxAgeMs) {
+          await unlink(filePath);
+          cleaned++;
+        }
+      } catch {
+        // Ignore individual file errors
+      }
+    }
+  } catch {
+    // Directory may not exist
+  }
+  return cleaned;
+}
 
 /**
  * Kill any existing Chrome browser and MCP processes
@@ -185,6 +229,71 @@ export async function quickScreenshot(
     },
     { keepOpen }
   );
+}
+
+/**
+ * Capture webpage screenshot for agent review with automatic cleanup
+ *
+ * Takes a screenshot to a managed temp file and returns a handle
+ * with the path and a cleanup function. Old screenshots (>5 min)
+ * are automatically cleaned up.
+ *
+ * Browser is also cleaned up after capture (unless keepOpen: true).
+ *
+ * @example
+ * const capture = await capturePageForReview({ url: "https://example.com" });
+ * // Agent reads capture.path with Read tool
+ * // When done reviewing:
+ * await capture.cleanup();
+ *
+ * @returns Object with path to screenshot and cleanup function
+ */
+export async function capturePageForReview(params: {
+  url: string;
+  waitForText?: string;
+  waitTimeout?: number;
+  fullPage?: boolean;
+  keepOpen?: boolean;
+}): Promise<{ path: string; cleanup: () => Promise<void> }> {
+  const { url, waitForText, waitTimeout, fullPage, keepOpen = false } = params;
+
+  await ensureScreenshotDir();
+  await cleanupOldScreenshots();
+
+  const filename = `screenshot-${randomUUID()}.png`;
+  const filePath = join(SCREENSHOT_DIR, filename);
+
+  await withBrowser(
+    async () => {
+      await navigate({ url });
+      if (waitForText) {
+        await waitFor({ text: waitForText, timeout: waitTimeout });
+      }
+      await screenshot({ filePath, fullPage });
+    },
+    { keepOpen }
+  );
+
+  return {
+    path: filePath,
+    cleanup: async () => {
+      try {
+        await unlink(filePath);
+      } catch {
+        // Ignore if already deleted
+      }
+    },
+  };
+}
+
+/**
+ * Clean up all managed screenshots
+ *
+ * @example
+ * await cleanupScreenshots();
+ */
+export async function cleanupScreenshots(): Promise<number> {
+  return cleanupOldScreenshots(0);
 }
 
 /**
