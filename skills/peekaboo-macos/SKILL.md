@@ -30,6 +30,7 @@ await capture.cleanup();
 - Auto-generates unique temp file path
 - Old screenshots (>5 min) auto-cleaned on each capture
 - Explicit cleanup when done reviewing
+- **Focus preserved** - returns focus to the app you were using
 
 ### One-liner Screenshot (Manual Path)
 
