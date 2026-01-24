@@ -39,6 +39,8 @@ export {
   quickAppScreenshot,
   seeAndClick,
   waitForElement,
+  getFrontmostApp,
+  withFocusPreservation,
   type UIElement,
   type SeeData,
 } from "./convenience";
@@ -128,6 +130,8 @@ export const peekaboo = {
   quickAppScreenshot: convenience.quickAppScreenshot,
   seeAndClick: convenience.seeAndClick,
   waitForElement: convenience.waitForElement,
+  getFrontmostApp: convenience.getFrontmostApp,
+  withFocusPreservation: convenience.withFocusPreservation,
 };
 
 // Export individual modules for direct access

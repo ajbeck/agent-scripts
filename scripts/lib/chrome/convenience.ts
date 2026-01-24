@@ -13,6 +13,12 @@ import { randomUUID } from "crypto";
 import { unlink, readdir, stat } from "fs/promises";
 import { join } from "path";
 
+// Import Peekaboo for focus preservation
+import {
+  getFrontmostApp,
+  withFocusPreservation,
+} from "../peekaboo/convenience";
+
 // Temp directory for managed screenshots
 const SCREENSHOT_DIR = "/tmp/agent-screenshots";
 
@@ -239,6 +245,8 @@ export async function quickScreenshot(
  * are automatically cleaned up.
  *
  * Browser is also cleaned up after capture (unless keepOpen: true).
+ * By default, preserves the user's current focus (restores the
+ * frontmost app after capture). Set preserveFocus: false to disable.
  *
  * @example
  * const capture = await capturePageForReview({ url: "https://example.com" });
@@ -254,25 +262,41 @@ export async function capturePageForReview(params: {
   waitTimeout?: number;
   fullPage?: boolean;
   keepOpen?: boolean;
+  preserveFocus?: boolean;
 }): Promise<{ path: string; cleanup: () => Promise<void> }> {
-  const { url, waitForText, waitTimeout, fullPage, keepOpen = false } = params;
+  const {
+    url,
+    waitForText,
+    waitTimeout,
+    fullPage,
+    keepOpen = false,
+    preserveFocus = true,
+  } = params;
 
-  await ensureScreenshotDir();
-  await cleanupOldScreenshots();
+  const doCapture = async () => {
+    await ensureScreenshotDir();
+    await cleanupOldScreenshots();
 
-  const filename = `screenshot-${randomUUID()}.png`;
-  const filePath = join(SCREENSHOT_DIR, filename);
+    const filename = `screenshot-${randomUUID()}.png`;
+    const filePath = join(SCREENSHOT_DIR, filename);
 
-  await withBrowser(
-    async () => {
-      await navigate({ url });
-      if (waitForText) {
-        await waitFor({ text: waitForText, timeout: waitTimeout });
-      }
-      await screenshot({ filePath, fullPage });
-    },
-    { keepOpen }
-  );
+    await withBrowser(
+      async () => {
+        await navigate({ url });
+        if (waitForText) {
+          await waitFor({ text: waitForText, timeout: waitTimeout });
+        }
+        await screenshot({ filePath, fullPage });
+      },
+      { keepOpen }
+    );
+
+    return filePath;
+  };
+
+  const filePath = preserveFocus
+    ? await withFocusPreservation(doCapture)
+    : await doCapture();
 
   return {
     path: filePath,

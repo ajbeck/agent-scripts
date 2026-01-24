@@ -56,6 +56,63 @@ async function cleanupOldScreenshots(maxAgeMs = 5 * 60 * 1000): Promise<number> 
 }
 
 /**
+ * Get the currently focused (frontmost) app name
+ */
+export async function getFrontmostApp(): Promise<string | null> {
+  try {
+    // Use AppleScript for reliable frontmost app detection
+    const result =
+      await Bun.$`osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'`.quiet();
+    const appName = result.stdout.toString().trim();
+    return appName || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Restore focus to an app
+ */
+async function restoreFocus(appName: string | null): Promise<void> {
+  if (!appName) return;
+  try {
+    // Use AppleScript for reliable app activation
+    await Bun.$`osascript -e 'tell application "${appName}" to activate'`.quiet();
+  } catch {
+    // Fallback to peekaboo
+    try {
+      await app.switch({ to: appName });
+    } catch {
+      // Ignore focus restore errors
+    }
+  }
+}
+
+/**
+ * Run a function while preserving the currently focused app
+ *
+ * Saves the frontmost app before running, then restores focus after.
+ *
+ * @example
+ * await withFocusPreservation(async () => {
+ *   await screenshot("/tmp/shot.png", { app: "Safari" });
+ * });
+ * // Focus returns to whatever app was active before
+ */
+export async function withFocusPreservation<T>(
+  fn: () => Promise<T>
+): Promise<T> {
+  const previousApp = await getFrontmostApp();
+  try {
+    return await fn();
+  } finally {
+    // Small delay to let any animations complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await restoreFocus(previousApp);
+  }
+}
+
+/**
  * UI Element from see() result
  */
 export interface UIElement {
@@ -119,6 +176,9 @@ export async function screenshot(
  * with the path and a cleanup function. Old screenshots (>5 min)
  * are automatically cleaned up.
  *
+ * By default, preserves the user's current focus (restores the
+ * frontmost app after capture). Set preserveFocus: false to disable.
+ *
  * @example
  * const capture = await captureForReview({ app: "Safari" });
  * // Agent reads capture.path with Read tool
@@ -128,20 +188,26 @@ export async function screenshot(
  * @returns Object with path to screenshot and cleanup function
  */
 export async function captureForReview(
-  options?: Omit<ImageOptions, "path">
+  options?: Omit<ImageOptions, "path"> & { preserveFocus?: boolean }
 ): Promise<{ path: string; cleanup: () => Promise<void> }> {
-  await ensureScreenshotDir();
+  const { preserveFocus = true, ...imageOptions } = options || {};
 
-  // Clean up old screenshots first
-  await cleanupOldScreenshots();
+  const doCapture = async () => {
+    await ensureScreenshotDir();
+    await cleanupOldScreenshots();
 
-  // Generate unique filename
-  const filename = `screenshot-${randomUUID()}.png`;
-  const path = join(SCREENSHOT_DIR, filename);
+    const filename = `screenshot-${randomUUID()}.png`;
+    const path = join(SCREENSHOT_DIR, filename);
 
-  // Take screenshot
-  const result = await image({ ...options, path });
-  unwrap(result, "captureForReview");
+    const result = await image({ ...imageOptions, path });
+    unwrap(result, "captureForReview");
+
+    return path;
+  };
+
+  const path = preserveFocus
+    ? await withFocusPreservation(doCapture)
+    : await doCapture();
 
   return {
     path,
