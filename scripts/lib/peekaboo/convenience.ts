@@ -11,6 +11,49 @@ import { image, type ImageOptions } from "./image";
 import { click, type ClickOptions } from "./click";
 import { type as typeInput, type TypeOptions } from "./input";
 import { app } from "./app";
+import { randomUUID } from "crypto";
+import { unlink, readdir, stat } from "fs/promises";
+import { join } from "path";
+
+// Temp directory for managed screenshots
+const SCREENSHOT_DIR = "/tmp/agent-screenshots";
+
+/**
+ * Ensure screenshot directory exists
+ */
+async function ensureScreenshotDir(): Promise<void> {
+  try {
+    await Bun.$`mkdir -p ${SCREENSHOT_DIR}`.quiet();
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * Clean up old screenshots (older than maxAgeMs)
+ */
+async function cleanupOldScreenshots(maxAgeMs = 5 * 60 * 1000): Promise<number> {
+  let cleaned = 0;
+  try {
+    const files = await readdir(SCREENSHOT_DIR);
+    const now = Date.now();
+    for (const file of files) {
+      const filePath = join(SCREENSHOT_DIR, file);
+      try {
+        const stats = await stat(filePath);
+        if (now - stats.mtimeMs > maxAgeMs) {
+          await unlink(filePath);
+          cleaned++;
+        }
+      } catch {
+        // Ignore individual file errors
+      }
+    }
+  } catch {
+    // Directory may not exist
+  }
+  return cleaned;
+}
 
 /**
  * UI Element from see() result
@@ -67,6 +110,86 @@ export async function screenshot(
   const result = await image({ ...options, path });
   unwrap(result, "screenshot");
   return path;
+}
+
+/**
+ * Capture screenshot for agent review with automatic cleanup
+ *
+ * Takes a screenshot to a managed temp file and returns a handle
+ * with the path and a cleanup function. Old screenshots (>5 min)
+ * are automatically cleaned up.
+ *
+ * @example
+ * const capture = await captureForReview({ app: "Safari" });
+ * // Agent reads capture.path with Read tool
+ * // When done reviewing:
+ * await capture.cleanup();
+ *
+ * @returns Object with path to screenshot and cleanup function
+ */
+export async function captureForReview(
+  options?: Omit<ImageOptions, "path">
+): Promise<{ path: string; cleanup: () => Promise<void> }> {
+  await ensureScreenshotDir();
+
+  // Clean up old screenshots first
+  await cleanupOldScreenshots();
+
+  // Generate unique filename
+  const filename = `screenshot-${randomUUID()}.png`;
+  const path = join(SCREENSHOT_DIR, filename);
+
+  // Take screenshot
+  const result = await image({ ...options, path });
+  unwrap(result, "captureForReview");
+
+  return {
+    path,
+    cleanup: async () => {
+      try {
+        await unlink(path);
+      } catch {
+        // Ignore if already deleted
+      }
+    },
+  };
+}
+
+/**
+ * Capture and immediately read screenshot as base64
+ *
+ * This is useful when you want the image data directly without
+ * managing temp files. The temp file is created and deleted
+ * within this function.
+ *
+ * @example
+ * const base64 = await captureAsBase64({ app: "Safari" });
+ *
+ * @returns Base64 encoded PNG image data
+ */
+export async function captureAsBase64(
+  options?: Omit<ImageOptions, "path">
+): Promise<string> {
+  const capture = await captureForReview(options);
+  try {
+    const file = Bun.file(capture.path);
+    const buffer = await file.arrayBuffer();
+    return Buffer.from(buffer).toString("base64");
+  } finally {
+    await capture.cleanup();
+  }
+}
+
+/**
+ * Clean up all managed screenshots
+ *
+ * Call this to remove all screenshots in the managed temp directory.
+ *
+ * @example
+ * await cleanupScreenshots();
+ */
+export async function cleanupScreenshots(): Promise<number> {
+  return cleanupOldScreenshots(0); // 0 = delete all regardless of age
 }
 
 /**

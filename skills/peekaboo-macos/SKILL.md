@@ -13,13 +13,29 @@ import { peekaboo, screenshot, detectElements, clickText } from "./agent-scripts
 
 ## Quick Start - Recommended Patterns
 
-### One-liner Screenshot
+### Capture and Review (Recommended for Agents)
 
 ```typescript
-// Takes screenshot - throws on error (no .success check needed)
-await screenshot("/tmp/screen.png");
+// Take screenshot with automatic cleanup
+const capture = await captureForReview({ app: "Safari" });
 
-// Screenshot of specific app
+// Read/review the screenshot (use Read tool on capture.path)
+// ... agent reviews the image ...
+
+// Clean up when done
+await capture.cleanup();
+```
+
+**Features:**
+- Auto-generates unique temp file path
+- Old screenshots (>5 min) auto-cleaned on each capture
+- Explicit cleanup when done reviewing
+
+### One-liner Screenshot (Manual Path)
+
+```typescript
+// Takes screenshot to specific path - you manage cleanup
+await screenshot("/tmp/screen.png");
 await quickAppScreenshot("Safari", "/tmp/safari.png");
 ```
 
@@ -61,7 +77,31 @@ await withApp("Safari", async () => {
 
 These functions throw on error - no need to check `.success`.
 
-### screenshot() - Take Screenshot
+### captureForReview() - Screenshot with Cleanup (Best for Agents)
+
+```typescript
+// Capture screenshot to managed temp file
+const capture = await captureForReview({ app: "Safari" });
+console.log(capture.path); // /tmp/agent-screenshots/screenshot-xxx.png
+
+// Agent reads the file...
+
+// Clean up when done
+await capture.cleanup();
+
+// Or clean up all managed screenshots
+await cleanupScreenshots();
+```
+
+### captureAsBase64() - Get Image Data Directly
+
+```typescript
+// Captures, reads, and cleans up - returns base64 PNG data
+const imageData = await captureAsBase64({ app: "Safari" });
+// No cleanup needed - temp file already deleted
+```
+
+### screenshot() - Take Screenshot (Manual Path)
 
 ```typescript
 await screenshot("/tmp/screen.png");
@@ -69,7 +109,7 @@ await screenshot("/tmp/app.png", { app: "Safari" });
 await screenshot("/tmp/retina.png", { retina: true });
 ```
 
-### quickAppScreenshot() - Screenshot of App
+### quickAppScreenshot() - Screenshot of App (Manual Path)
 
 ```typescript
 await quickAppScreenshot("Safari", "/tmp/safari.png");

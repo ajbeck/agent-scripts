@@ -23,6 +23,9 @@ export { exec, peekabooExec, peekabooExecRaw, type PeekabooResult } from "./base
 // Convenience exports (recommended for agents)
 export {
   screenshot,
+  captureForReview,
+  captureAsBase64,
+  cleanupScreenshots,
   detectElements,
   findElement,
   findElements,
@@ -109,6 +112,9 @@ export const peekaboo = {
 
   // Convenience (recommended for agents - throws on error)
   screenshot: convenience.screenshot,
+  captureForReview: convenience.captureForReview,
+  captureAsBase64: convenience.captureAsBase64,
+  cleanupScreenshots: convenience.cleanupScreenshots,
   detectElements: convenience.detectElements,
   findElement: convenience.findElement,
   findElements: convenience.findElements,
