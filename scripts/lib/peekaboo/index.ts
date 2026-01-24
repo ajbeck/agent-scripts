@@ -20,6 +20,26 @@
 // Base exports
 export { exec, peekabooExec, peekabooExecRaw, type PeekabooResult } from "./base";
 
+// Convenience exports (recommended for agents)
+export {
+  screenshot,
+  detectElements,
+  findElement,
+  findElements,
+  findElementsByRole,
+  clickElement,
+  clickText,
+  typeText,
+  launchApp,
+  quitApp,
+  withApp,
+  quickAppScreenshot,
+  seeAndClick,
+  waitForElement,
+  type UIElement,
+  type SeeData,
+} from "./convenience";
+
 // Type exports
 export * from "./types";
 
@@ -45,6 +65,7 @@ import { open } from "./open";
 import { agent } from "./agent";
 import { list } from "./list";
 import { peekabooExec } from "./base";
+import * as convenience from "./convenience";
 
 /**
  * Sleep for a specified duration
@@ -57,13 +78,13 @@ async function sleep(ms: number) {
  * Peekaboo namespace - macOS automation interface
  */
 export const peekaboo = {
-  // Core
+  // Core (low-level)
   image,
   see,
   list,
   sleep,
 
-  // Interaction
+  // Interaction (low-level)
   click,
   type: typeInput,
   hotkey,
@@ -73,7 +94,7 @@ export const peekaboo = {
   drag,
   paste,
 
-  // System
+  // System (low-level)
   app,
   window,
   clipboard,
@@ -85,6 +106,22 @@ export const peekaboo = {
 
   // AI
   agent,
+
+  // Convenience (recommended for agents - throws on error)
+  screenshot: convenience.screenshot,
+  detectElements: convenience.detectElements,
+  findElement: convenience.findElement,
+  findElements: convenience.findElements,
+  findElementsByRole: convenience.findElementsByRole,
+  clickElement: convenience.clickElement,
+  clickText: convenience.clickText,
+  typeText: convenience.typeText,
+  launchApp: convenience.launchApp,
+  quitApp: convenience.quitApp,
+  withApp: convenience.withApp,
+  quickAppScreenshot: convenience.quickAppScreenshot,
+  seeAndClick: convenience.seeAndClick,
+  waitForElement: convenience.waitForElement,
 };
 
 // Export individual modules for direct access

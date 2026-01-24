@@ -8,300 +8,294 @@ description: Full API reference for peekaboo macOS automation. Use for UI automa
 TypeScript interface for macOS UI automation via the `peekaboo` CLI.
 
 ```typescript
-import { peekaboo } from "./agent-scripts";
+import { peekaboo, screenshot, detectElements, clickText } from "./agent-scripts";
 ```
 
-## Core - Vision & Screenshots
+## Quick Start - Recommended Patterns
 
-### see() - Detect UI Elements
+### One-liner Screenshot
 
 ```typescript
-// Detect all UI elements on screen
-const { data } = await peekaboo.see({ annotate: true });
-// Returns elements with IDs like B1, B2, T1, T2, etc.
-// B = Button, T = Text, I = Image, etc.
+// Takes screenshot - throws on error (no .success check needed)
+await screenshot("/tmp/screen.png");
 
-// Focus on specific app
-const { data } = await peekaboo.see({ app: "Safari", annotate: true });
+// Screenshot of specific app
+await quickAppScreenshot("Safari", "/tmp/safari.png");
 ```
 
-### image() - Screenshots
+### Detect and Find Elements
 
 ```typescript
-// Full screen
-await peekaboo.image({ path: "/tmp/screenshot.png" });
+// Get all UI elements
+const data = await detectElements({ app: "Safari" });
+console.log(`Found ${data.elementCount} elements`);
 
-// Specific app window
-await peekaboo.image({ app: "Safari", path: "/tmp/safari.png" });
+// Find element by text (case-insensitive partial match)
+const button = await findElement("Submit", { app: "Safari" });
+if (button) {
+  await clickElement(button.id);
+}
 
-// With element annotations
-await peekaboo.image({ annotate: true, path: "/tmp/annotated.png" });
+// Find elements by role
+const buttons = await findElementsByRole("button", { app: "Safari" });
 ```
 
-### list() - List Windows/Apps
+### Click by Text (Simplest Interaction)
 
 ```typescript
-// List all windows
-const windows = await peekaboo.list({ type: "windows" });
-
-// List running apps
-const apps = await peekaboo.list({ type: "apps" });
+// Detects elements and clicks matching text
+await clickText("Submit", { app: "Safari" });
+await clickText("OK");
 ```
 
-## Interaction
-
-### click() - Click Elements
+### App Automation with Cleanup
 
 ```typescript
-// Click by element ID (from see())
-await peekaboo.click({ on: "B1" });
-
-// Click by coordinates
-await peekaboo.click({ x: 100, y: 200 });
-
-// Click by text content
-await peekaboo.click({ text: "Submit" });
-
-// Right-click
-await peekaboo.click({ on: "B1", button: "right" });
-
-// Double-click
-await peekaboo.click({ on: "B1", clicks: 2 });
-```
-
-### type() - Type Text
-
-```typescript
-// Type text at current cursor
-await peekaboo.type({ text: "Hello world" });
-
-// Type with delay between characters (ms)
-await peekaboo.type({ text: "Slow typing", delay: 50 });
-```
-
-### hotkey() - Keyboard Shortcuts
-
-```typescript
-// Cmd+C (copy)
-await peekaboo.hotkey({ keys: ["cmd", "c"] });
-
-// Cmd+Shift+S (save as)
-await peekaboo.hotkey({ keys: ["cmd", "shift", "s"] });
-
-// Cmd+Tab (switch apps)
-await peekaboo.hotkey({ keys: ["cmd", "tab"] });
-```
-
-### press() - Press Keys
-
-```typescript
-// Single key
-await peekaboo.press({ key: "enter" });
-await peekaboo.press({ key: "escape" });
-await peekaboo.press({ key: "tab" });
-
-// Arrow keys
-await peekaboo.press({ key: "down" });
-await peekaboo.press({ key: "up" });
-```
-
-### scroll() - Scroll
-
-```typescript
-// Scroll down
-await peekaboo.scroll({ direction: "down", amount: 3 });
-
-// Scroll up
-await peekaboo.scroll({ direction: "up", amount: 5 });
-
-// Scroll in specific app
-await peekaboo.scroll({ app: "Safari", direction: "down" });
-```
-
-### move() - Move Mouse
-
-```typescript
-// Move to coordinates
-await peekaboo.move({ x: 500, y: 300 });
-
-// Move to element
-await peekaboo.move({ on: "B1" });
-```
-
-### drag() - Drag and Drop
-
-```typescript
-// Drag from one point to another
-await peekaboo.drag({ from: { x: 100, y: 100 }, to: { x: 300, y: 300 } });
-
-// Drag element to location
-await peekaboo.drag({ from: "B1", to: { x: 300, y: 300 } });
-```
-
-### paste() - Paste from Clipboard
-
-```typescript
-// Paste current clipboard
-await peekaboo.paste();
-
-// Set clipboard and paste
-await peekaboo.clipboard.set({ text: "Hello" });
-await peekaboo.paste();
-```
-
-## System - Apps & Windows
-
-### app - Application Control
-
-```typescript
-// Launch app
-await peekaboo.app.launch({ name: "Safari" });
-
-// Quit app
-await peekaboo.app.quit({ name: "Safari" });
-
-// Activate (bring to front)
-await peekaboo.app.activate({ name: "Safari" });
-
-// Hide app
-await peekaboo.app.hide({ name: "Safari" });
-
-// List running apps
-const apps = await peekaboo.app.list();
-```
-
-### window - Window Control
-
-```typescript
-// Focus window
-await peekaboo.window.focus({ app: "Safari" });
-
-// Minimize
-await peekaboo.window.minimize({ app: "Safari" });
-
-// Maximize/fullscreen
-await peekaboo.window.maximize({ app: "Safari" });
-
-// Move window
-await peekaboo.window.move({ app: "Safari", x: 100, y: 100 });
-
-// Resize window
-await peekaboo.window.resize({ app: "Safari", width: 1200, height: 800 });
-
-// Close window
-await peekaboo.window.close({ app: "Safari" });
-```
-
-### clipboard - Clipboard Operations
-
-```typescript
-// Get clipboard content
-const content = await peekaboo.clipboard.get();
-
-// Set clipboard
-await peekaboo.clipboard.set({ text: "Copied text" });
-```
-
-### menu - Menu Bar
-
-```typescript
-// Click menu item
-await peekaboo.menu.click({ app: "Safari", path: ["File", "New Window"] });
-
-// Get menu structure
-const menus = await peekaboo.menu.list({ app: "Safari" });
-```
-
-### dialog - System Dialogs
-
-```typescript
-// Handle file open dialog
-await peekaboo.dialog.fileOpen({ path: "/path/to/file.txt" });
-
-// Handle file save dialog
-await peekaboo.dialog.fileSave({ path: "/path/to/save.txt" });
-```
-
-### dock - Dock Control
-
-```typescript
-// Click dock item
-await peekaboo.dock.click({ app: "Safari" });
-```
-
-### open - Open Files/URLs
-
-```typescript
-// Open URL in default browser
-await peekaboo.open({ url: "https://example.com" });
-
-// Open file with default app
-await peekaboo.open({ path: "/path/to/file.pdf" });
-
-// Open with specific app
-await peekaboo.open({ path: "/path/to/file.txt", app: "TextEdit" });
-```
-
-### space - Mission Control / Spaces
-
-```typescript
-// Switch to space
-await peekaboo.space.switch({ index: 2 });
-
-// Show Mission Control
-await peekaboo.space.missionControl();
-```
-
-## AI - Agent Mode
-
-### agent() - AI-Powered Automation
-
-```typescript
-// Execute natural language command
-await peekaboo.agent({ task: "Open Safari and go to google.com" });
-
-// Agent with specific app context
-await peekaboo.agent({
-  task: "Find the search box and type hello",
-  app: "Safari",
+await withApp("Safari", async () => {
+  await clickText("File");
+  await screenshot("/tmp/safari-menu.png");
 });
 ```
 
-## Utility
+## Convenience Functions (Recommended)
 
-### sleep() - Wait
+These functions throw on error - no need to check `.success`.
+
+### screenshot() - Take Screenshot
 
 ```typescript
-// Wait for 1 second
-await peekaboo.sleep(1000);
+await screenshot("/tmp/screen.png");
+await screenshot("/tmp/app.png", { app: "Safari" });
+await screenshot("/tmp/retina.png", { retina: true });
 ```
 
-## Common Workflow Pattern
+### quickAppScreenshot() - Screenshot of App
 
 ```typescript
-import { peekaboo } from "./agent-scripts";
+await quickAppScreenshot("Safari", "/tmp/safari.png");
+await quickAppScreenshot("Finder", "/tmp/finder.png");
+```
 
-// 1. Launch app
-await peekaboo.app.launch({ name: "Safari" });
-await peekaboo.sleep(1000);
+### detectElements() - Get UI Elements
 
-// 2. See what's on screen
-const { data } = await peekaboo.see({ app: "Safari", annotate: true });
+```typescript
+const data = await detectElements({ app: "Safari" });
+// Returns:
+// {
+//   elements: UIElement[],
+//   elementCount: number,
+//   screenshotPath: string,
+//   annotatedPath: string,
+//   snapshotId: string,
+//   appName: string,
+//   windowTitle: string
+// }
 
-// 3. Interact with elements
-await peekaboo.click({ on: "T1" }); // Click URL bar (text field 1)
-await peekaboo.type({ text: "https://example.com" });
+// UIElement has: id, role, label, is_actionable
+```
+
+### findElement() / findElements() - Search by Text
+
+```typescript
+const el = await findElement("Submit"); // First match
+const els = await findElements("Button"); // All matches
+```
+
+### findElementsByRole() - Search by Role
+
+```typescript
+const buttons = await findElementsByRole("button");
+const textFields = await findElementsByRole("textField");
+```
+
+### clickElement() - Click by ID
+
+```typescript
+await clickElement("elem_105");
+await clickElement("elem_105", { double: true });
+```
+
+### clickText() - Click by Text
+
+```typescript
+await clickText("Submit");
+await clickText("OK", { app: "Safari" });
+```
+
+### typeText() - Type Text
+
+```typescript
+await typeText("Hello world");
+await typeText("Hello", { app: "Safari" });
+```
+
+### launchApp() / quitApp() - App Lifecycle
+
+```typescript
+await launchApp("Safari"); // Waits until ready
+await quitApp("Safari");
+await quitApp("Safari", true); // Force quit
+```
+
+### withApp() - App Automation Block
+
+```typescript
+await withApp("Safari", async () => {
+  await clickText("File");
+  await screenshot("/tmp/menu.png");
+});
+
+// With auto-quit
+await withApp("TextEdit", async () => {
+  await typeText("Hello");
+}, { quitAfter: true });
+```
+
+### waitForElement() - Wait for Element
+
+```typescript
+const el = await waitForElement("Loading complete", {
+  app: "Safari",
+  timeout: 10000,
+});
+```
+
+## Low-Level API
+
+Use these when you need fine-grained control. Remember to check `.success`.
+
+### Core
+
+```typescript
+// Screenshot (returns PeekabooResult)
+const result = await peekaboo.image({ path: "/tmp/shot.png" });
+if (!result.success) console.error(result.error);
+
+// See UI elements
+const { data } = await peekaboo.see({ annotate: true, app: "Safari" });
+
+// List windows/apps
+const windows = await peekaboo.list({ type: "windows" });
+const apps = await peekaboo.list({ type: "apps" });
+```
+
+### Interaction
+
+```typescript
+// Click
+await peekaboo.click({ on: "B1" });
+await peekaboo.click({ coords: { x: 100, y: 200 } });
+await peekaboo.click({ text: "Submit" });
+await peekaboo.click({ on: "B1", double: true });
+await peekaboo.click({ on: "B1", right: true });
+
+// Type
+await peekaboo.type({ text: "Hello" });
+await peekaboo.type({ text: "Hello", delay: 50 });
+
+// Hotkey
+await peekaboo.hotkey({ keys: ["cmd", "c"] });
+await peekaboo.hotkey({ keys: ["cmd", "shift", "s"] });
+
+// Press
 await peekaboo.press({ key: "enter" });
+await peekaboo.press({ key: "escape" });
 
-// 4. Wait and verify
-await peekaboo.sleep(2000);
-await peekaboo.image({ app: "Safari", path: "/tmp/result.png" });
+// Scroll
+await peekaboo.scroll({ direction: "down", amount: 3 });
+
+// Move
+await peekaboo.move({ x: 500, y: 300 });
+await peekaboo.move({ on: "B1" });
+
+// Drag
+await peekaboo.drag({ from: { x: 100, y: 100 }, to: { x: 300, y: 300 } });
+
+// Paste
+await peekaboo.paste();
+```
+
+### System
+
+```typescript
+// App control
+await peekaboo.app.launch({ name: "Safari" });
+await peekaboo.app.quit({ app: "Safari" });
+await peekaboo.app.switch({ to: "Finder" });
+await peekaboo.app.hide("Safari");
+const apps = await peekaboo.app.list();
+
+// Window control
+await peekaboo.window.focus({ app: "Safari" });
+await peekaboo.window.minimize({ app: "Safari" });
+await peekaboo.window.maximize({ app: "Safari" });
+await peekaboo.window.resize({ app: "Safari", width: 1200, height: 800 });
+await peekaboo.window.close({ app: "Safari" });
+
+// Clipboard
+const content = await peekaboo.clipboard.get();
+await peekaboo.clipboard.set({ text: "Copied text" });
+
+// Menu
+await peekaboo.menu.click({ app: "Safari", path: ["File", "New Window"] });
+
+// Dialog
+await peekaboo.dialog.fileOpen({ path: "/path/to/file.txt" });
+await peekaboo.dialog.fileSave({ path: "/path/to/save.txt" });
+
+// Open
+await peekaboo.open({ url: "https://example.com" });
+await peekaboo.open({ path: "/path/to/file.pdf" });
+
+// Space/Mission Control
+await peekaboo.space.switch({ index: 2 });
+await peekaboo.space.missionControl();
+```
+
+### AI Agent
+
+```typescript
+await peekaboo.agent({ task: "Open Safari and go to google.com" });
+```
+
+## Common Workflows
+
+### Form Filling
+
+```typescript
+await withApp("Safari", async () => {
+  const elements = await detectElements();
+  const nameField = elements.elements.find(e => e.label?.includes("Name"));
+  if (nameField) {
+    await clickElement(nameField.id);
+    await typeText("John Doe");
+  }
+  await clickText("Submit");
+});
+```
+
+### Menu Navigation
+
+```typescript
+await peekaboo.menu.click({
+  app: "Safari",
+  path: ["File", "New Private Window"],
+});
+await screenshot("/tmp/private-window.png", { app: "Safari" });
+```
+
+### Keyboard Shortcuts
+
+```typescript
+await peekaboo.hotkey({ keys: ["cmd", "c"] }); // Copy
+await peekaboo.hotkey({ keys: ["cmd", "v"] }); // Paste
+await peekaboo.hotkey({ keys: ["cmd", "z"] }); // Undo
+await peekaboo.hotkey({ keys: ["cmd", "shift", "4"] }); // Screenshot selection
 ```
 
 ## Source Files
 
-For implementation details and types, read:
-
 - `agent-scripts/lib/peekaboo/index.ts` - Main exports and namespace
+- `agent-scripts/lib/peekaboo/convenience.ts` - High-level functions
 - `agent-scripts/lib/peekaboo/types.ts` - Type definitions
 - `agent-scripts/lib/peekaboo/*.ts` - Individual command modules
