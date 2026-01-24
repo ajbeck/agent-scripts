@@ -22,6 +22,17 @@
 // Base exports
 export { getChrome, closeChrome, chromeExec } from "./base";
 
+// Convenience exports
+export {
+  navigateAndScreenshot,
+  navigateAndSnapshot,
+  closeAllPages,
+  quitBrowser,
+  withBrowser,
+  quickScreenshot,
+  ensureCleanState,
+} from "./convenience";
+
 // Type exports
 export * from "./types";
 
@@ -32,6 +43,7 @@ import * as debugging from "./debugging";
 import * as performance from "./performance";
 import * as network from "./network";
 import * as emulation from "./emulation";
+import * as convenience from "./convenience";
 import { closeChrome } from "./base";
 
 /**
@@ -76,9 +88,26 @@ export const chrome = {
   emulate: emulation.emulate,
   resize: emulation.resize,
 
+  // Convenience (with automatic cleanup)
+  navigateAndScreenshot: convenience.navigateAndScreenshot,
+  navigateAndSnapshot: convenience.navigateAndSnapshot,
+  quickScreenshot: convenience.quickScreenshot,
+  withBrowser: convenience.withBrowser,
+
   // Cleanup
+  closeAllPages: convenience.closeAllPages,
   close: closeChrome,
+  quit: convenience.quitBrowser,
+  ensureClean: convenience.ensureCleanState,
 };
 
 // Export individual modules for direct access
-export { input, navigation, debugging, performance, network, emulation };
+export {
+  input,
+  navigation,
+  debugging,
+  performance,
+  network,
+  emulation,
+  convenience,
+};
