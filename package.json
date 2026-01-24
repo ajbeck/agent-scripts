@@ -18,6 +18,7 @@
   "dependencies": {
     "@atlaskit/adf-schema": "^51.5.5",
     "@atlaskit/editor-json-transformer": "^8.31.4",
-    "@atlaskit/editor-markdown-transformer": "^5.20.4"
+    "@atlaskit/editor-markdown-transformer": "^5.20.4",
+    "mcporter": "^0.7.3"
   }
 }

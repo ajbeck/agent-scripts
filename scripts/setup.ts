@@ -35,6 +35,7 @@ const DEPENDENCIES = [
   "@atlaskit/editor-markdown-transformer",
   "ajv",
   "ajv-formats",
+  "mcporter",
 ];
 
 const FILES_TO_DOWNLOAD = [
@@ -51,11 +52,22 @@ const FILES_TO_DOWNLOAD = [
   "scripts/lib/acli/project.ts",
   "scripts/lib/acli/board.ts",
   "scripts/lib/acli/utils.ts",
+  "scripts/lib/chrome/index.ts",
+  "scripts/lib/chrome/base.ts",
+  "scripts/lib/chrome/types.ts",
+  "scripts/lib/chrome/input.ts",
+  "scripts/lib/chrome/navigation.ts",
+  "scripts/lib/chrome/debugging.ts",
+  "scripts/lib/chrome/performance.ts",
+  "scripts/lib/chrome/network.ts",
+  "scripts/lib/chrome/emulation.ts",
+  "config/mcporter.json",
 ];
 
 const SKILLS_TO_INSTALL = [
   "skills/acli-jira/SKILL.md",
   "skills/peekaboo-macos/SKILL.md",
+  "skills/chrome-devtools/SKILL.md",
 ];
 
 /**
@@ -120,13 +132,14 @@ function generateAgentScriptsMd(config: ProjectConfig): string {
 TypeScript interfaces for automation. Import from \`./agent-scripts\`:
 
 \`\`\`typescript
-import { acli, peekaboo, markdownToAdf } from "./agent-scripts";
+import { acli, peekaboo, chrome, markdownToAdf } from "./agent-scripts";
 \`\`\`
 
 | Tool            | Purpose                                           | Source                          |
 | --------------- | ------------------------------------------------- | ------------------------------- |
 | \`acli\`          | Jira workitems, projects, boards                  | \`agent-scripts/lib/acli/\`       |
 | \`peekaboo\`      | macOS UI automation (screenshots, clicks, typing) | \`agent-scripts/lib/peekaboo/\`   |
+| \`chrome\`        | Browser automation (navigate, click, screenshot)  | \`agent-scripts/lib/chrome/\`     |
 | \`markdownToAdf\` | Convert markdown to Atlassian Document Format     | \`agent-scripts/lib/md-to-adf.ts\` |
 ${projectSection}
 ## acli - Jira
@@ -165,6 +178,26 @@ await peekaboo.hotkey({ keys: ["cmd", "c"] });
 // Apps and windows
 await peekaboo.app.launch({ name: "Safari" });
 await peekaboo.window.focus({ app: "Safari" });
+\`\`\`
+
+## chrome - Browser Automation
+
+\`\`\`typescript
+// Navigate and snapshot
+await chrome.navigate({ url: "https://example.com" });
+const snapshot = await chrome.snapshot(); // Returns element UIDs
+
+// Interact with elements (UIDs from snapshot)
+await chrome.click({ uid: "button-123" });
+await chrome.fill({ uid: "input-456", value: "hello" });
+await chrome.pressKey({ key: "Enter" });
+
+// Wait and screenshot
+await chrome.waitFor({ text: "Success" });
+await chrome.screenshot({ filePath: "/tmp/screen.png" });
+
+// Clean up
+await chrome.close();
 \`\`\`
 
 **For full APIs, read the TypeScript source files or use the skills in \`.claude/skills/\`.**
@@ -304,7 +337,7 @@ async function copyFilesFromLocal(
 ): Promise<void> {
   // Create directory structure
   if (!dryRun) {
-    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")}`.quiet();
+    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")} ${join(scriptsDir, "lib/chrome")} ${join(scriptsDir, "config")}`.quiet();
   }
 
   // Copy lib folder
@@ -314,6 +347,15 @@ async function copyFilesFromLocal(
   } else {
     await Bun.$`cp -r ${join(sourceDir, "scripts/lib")}/* ${join(scriptsDir, "lib")}/`.quiet();
     console.log(`  Copied: scripts/lib/`);
+  }
+
+  // Copy config folder (for mcporter.json)
+  console.log("Copying config/...");
+  if (dryRun) {
+    console.log(`  Would copy: ${join(sourceDir, "config")} -> ${join(scriptsDir, "config")}`);
+  } else {
+    await Bun.$`cp -r ${join(sourceDir, "config")}/* ${join(scriptsDir, "config")}/`.quiet();
+    console.log(`  Copied: config/`);
   }
 
   // Copy top-level files
@@ -339,13 +381,21 @@ async function downloadFilesFromGithub(
 ): Promise<void> {
   // Create directory structure
   if (!dryRun) {
-    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")}`.quiet();
+    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")} ${join(scriptsDir, "lib/chrome")} ${join(scriptsDir, "config")}`.quiet();
   }
 
   console.log("Downloading files from GitHub...");
 
   for (const filePath of FILES_TO_DOWNLOAD) {
-    const relativePath = filePath.replace("scripts/", "");
+    // Handle paths that don't start with "scripts/"
+    let relativePath: string;
+    if (filePath.startsWith("scripts/")) {
+      relativePath = filePath.replace("scripts/", "");
+    } else if (filePath.startsWith("config/")) {
+      relativePath = filePath;
+    } else {
+      relativePath = filePath;
+    }
     const destPath = join(scriptsDir, relativePath);
 
     if (dryRun) {

@@ -228,13 +228,14 @@ Break implementation into small discrete tasks to avoid AWS Bedrock output token
 TypeScript interfaces for automation. Import from `./scripts`:
 
 ```typescript
-import { acli, peekaboo, markdownToAdf } from "./scripts";
+import { acli, peekaboo, chrome, markdownToAdf } from "./scripts";
 ```
 
 | Tool            | Purpose                                           | Source                     |
 | --------------- | ------------------------------------------------- | -------------------------- |
 | `acli`          | Jira workitems, projects, boards                  | `scripts/lib/acli/`        |
 | `peekaboo`      | macOS UI automation (screenshots, clicks, typing) | `scripts/lib/peekaboo/`    |
+| `chrome`        | Browser automation (navigate, click, screenshot)  | `scripts/lib/chrome/`      |
 | `markdownToAdf` | Convert markdown to Atlassian Document Format     | `scripts/lib/md-to-adf.ts` |
 
 ### acli - Jira
@@ -276,6 +277,26 @@ await peekaboo.hotkey({ keys: ["cmd", "c"] });
 // Apps and windows
 await peekaboo.app.launch({ name: "Safari" });
 await peekaboo.window.focus({ app: "Safari" });
+```
+
+### chrome - Browser Automation
+
+```typescript
+// Navigate and snapshot
+await chrome.navigate({ url: "https://example.com" });
+const snapshot = await chrome.snapshot(); // Returns element UIDs
+
+// Interact with elements (UIDs from snapshot)
+await chrome.click({ uid: "button-123" });
+await chrome.fill({ uid: "input-456", value: "hello" });
+await chrome.pressKey({ key: "Enter" });
+
+// Wait and screenshot
+await chrome.waitFor({ text: "Success" });
+await chrome.screenshot({ filePath: "/tmp/screen.png" });
+
+// Clean up
+await chrome.close();
 ```
 
 **For full APIs, read the TypeScript source files or use the skills in `.claude/skills/`.**

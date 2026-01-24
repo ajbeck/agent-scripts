@@ -30,13 +30,14 @@ See [Installation Options](#installation-options) for more configuration.
 
 The following must be installed and available in PATH:
 
-| Tool                                             | Required             | Purpose                              |
-| ------------------------------------------------ | -------------------- | ------------------------------------ |
-| [Bun](https://bun.sh)                            | Yes                  | JavaScript/TypeScript runtime        |
-| [Node.js/npm](https://nodejs.org)                | Yes                  | Package management, npx              |
-| [acli](https://github.com/atlassian/acli)        | For Jira             | Atlassian CLI for Jira integration   |
-| [peekaboo](https://github.com/steipete/peekaboo) | For macOS automation | macOS UI automation CLI              |
-| [prettier](https://prettier.io)                  | Optional             | Markdown formatting (or use via npx) |
+| Tool                                             | Required               | Purpose                              |
+| ------------------------------------------------ | ---------------------- | ------------------------------------ |
+| [Bun](https://bun.sh)                            | Yes                    | JavaScript/TypeScript runtime        |
+| [Node.js/npm](https://nodejs.org)                | Yes                    | Package management, npx              |
+| [Chrome](https://www.google.com/chrome/)         | For browser automation | Browser for chrome-devtools-mcp      |
+| [acli](https://github.com/atlassian/acli)        | For Jira               | Atlassian CLI for Jira integration   |
+| [peekaboo](https://github.com/steipete/peekaboo) | For macOS automation   | macOS UI automation CLI              |
+| [prettier](https://prettier.io)                  | Optional               | Markdown formatting (or use via npx) |
 
 ## Available Tools
 
@@ -44,6 +45,7 @@ The following must be installed and available in PATH:
 | --------------- | ------------------------------------------------- | -------------------------- |
 | `acli`          | Jira workitems, projects, boards                  | `scripts/lib/acli/`        |
 | `peekaboo`      | macOS UI automation (screenshots, clicks, typing) | `scripts/lib/peekaboo/`    |
+| `chrome`        | Browser automation (navigate, click, screenshot)  | `scripts/lib/chrome/`      |
 | `markdownToAdf` | Convert markdown to Atlassian Document Format     | `scripts/lib/md-to-adf.ts` |
 
 ### ACLI Jira Interface
@@ -101,6 +103,32 @@ await peekaboo.hotkey({ keys: ["cmd", "c"] });
 await peekaboo.app.launch({ name: "Safari" });
 await peekaboo.window.focus({ app: "Safari" });
 ```
+
+### Chrome DevTools Browser Automation
+
+TypeScript interface for browser automation via chrome-devtools-mcp and mcporter.
+
+```typescript
+import { chrome } from "./agent-scripts";
+
+// Navigate and take snapshot (returns element UIDs)
+await chrome.navigate({ url: "https://example.com" });
+const snapshot = await chrome.snapshot();
+
+// Interact with elements using UIDs from snapshot
+await chrome.click({ uid: "button-123" });
+await chrome.fill({ uid: "input-456", value: "hello@example.com" });
+await chrome.pressKey({ key: "Enter" });
+
+// Wait and screenshot
+await chrome.waitFor({ text: "Success" });
+await chrome.screenshot({ filePath: "/tmp/result.png" });
+
+// Clean up
+await chrome.close();
+```
+
+Features: navigation, form filling, screenshots, performance tracing, network inspection, device emulation.
 
 ### Markdown to ADF Converter
 
@@ -201,10 +229,11 @@ This project follows Anthropic's [best practices for CLAUDE.md](https://code.cla
 
 ### Skills Reference
 
-| Skill            | Description               | Triggers                                      |
-| ---------------- | ------------------------- | --------------------------------------------- |
-| `acli-jira`      | Full Jira API reference   | Working with Jira workitems, projects, boards |
-| `peekaboo-macos` | Full macOS automation API | UI automation, screenshots, app control       |
+| Skill             | Description                 | Triggers                                      |
+| ----------------- | --------------------------- | --------------------------------------------- |
+| `acli-jira`       | Full Jira API reference     | Working with Jira workitems, projects, boards |
+| `peekaboo-macos`  | Full macOS automation API   | UI automation, screenshots, app control       |
+| `chrome-devtools` | Full browser automation API | Browser automation, web scraping, testing     |
 
 Claude automatically loads relevant skills based on the task context.
 
@@ -239,5 +268,7 @@ echo "# Test" | bun run scripts/md-to-adf.ts
 - [@atlaskit/editor-json-transformer](https://www.npmjs.com/package/@atlaskit/editor-json-transformer) - ProseMirror to ADF JSON
 - [ajv](https://www.npmjs.com/package/ajv) - JSON schema validator
 - [ajv-formats](https://www.npmjs.com/package/ajv-formats) - Format validators for Ajv
+- [mcporter](https://github.com/steipete/mcporter) - MCP runtime for calling MCP servers from TypeScript
 - [acli](https://github.com/atlassian/acli) - Atlassian CLI (external, must be in PATH)
 - [peekaboo](https://github.com/steipete/peekaboo) - macOS automation CLI (external, must be in PATH)
+- [chrome-devtools-mcp](https://github.com/anthropics/chrome-devtools-mcp) - Chrome DevTools MCP server (called via npx)
