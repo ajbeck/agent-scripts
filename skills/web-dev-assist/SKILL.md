@@ -11,6 +11,7 @@ Unified workflow combining **Chrome DevTools** (in-page automation) and **Peekab
 ## When to Use This Skill
 
 Invoke `/web-dev-assist` when:
+
 - Testing web application UI/UX
 - Debugging layout issues across viewports
 - Automating browser interactions that involve both page content AND browser UI
@@ -32,27 +33,27 @@ const capture = await webDev.capturePage({ url: "https://example.com" });
 
 // Interactive testing session
 await webDev.testSession({ url: "https://example.com" }, async (session) => {
-  await session.clickPage("Login");           // Click in-page element
+  await session.clickPage("Login"); // Click in-page element
   await session.fillPage("email", "test@example.com");
-  await session.clickBrowser("Allow");        // Click browser dialog
+  await session.clickBrowser("Allow"); // Click browser dialog
   await session.screenshot("/tmp/result.png");
 });
 ```
 
 ## Tool Selection Guide
 
-| Task | Use | Why |
-|------|-----|-----|
-| Click button/link on page | Chrome `click()` | Precise DOM targeting via UIDs |
-| Fill form fields | Chrome `fill()` | Direct input injection |
-| Screenshot page content | Chrome `screenshot()` | No browser chrome, consistent |
-| Screenshot with browser UI | Peekaboo `captureForReview()` | Includes toolbar, tabs |
-| Handle file picker dialog | Peekaboo `click()` | OS-level dialog |
-| Handle auth/permission popup | Peekaboo `click()` | Browser-level UI |
-| Check page loaded | Chrome `waitFor()` | In-page text detection |
-| Check browser state | Peekaboo `detectElements()` | Browser UI elements |
-| Position browser window | Peekaboo `window.resize()` | OS window management |
-| Test mobile viewport | Chrome `emulate()` | In-page viewport |
+| Task                         | Use                           | Why                            |
+| ---------------------------- | ----------------------------- | ------------------------------ |
+| Click button/link on page    | Chrome `click()`              | Precise DOM targeting via UIDs |
+| Fill form fields             | Chrome `fill()`               | Direct input injection         |
+| Screenshot page content      | Chrome `screenshot()`         | No browser chrome, consistent  |
+| Screenshot with browser UI   | Peekaboo `captureForReview()` | Includes toolbar, tabs         |
+| Handle file picker dialog    | Peekaboo `click()`            | OS-level dialog                |
+| Handle auth/permission popup | Peekaboo `click()`            | Browser-level UI               |
+| Check page loaded            | Chrome `waitFor()`            | In-page text detection         |
+| Check browser state          | Peekaboo `detectElements()`   | Browser UI elements            |
+| Position browser window      | Peekaboo `window.resize()`    | OS window management           |
+| Test mobile viewport         | Chrome `emulate()`            | In-page viewport               |
 
 ## Workflows
 
@@ -142,7 +143,10 @@ await chrome.withBrowser(async () => {
   for (const vp of viewports) {
     await chrome.emulate({ viewport: vp });
     await chrome.navigate({ url: "https://example.com" });
-    await chrome.screenshot({ filePath: `/tmp/${vp.name}.png`, fullPage: true });
+    await chrome.screenshot({
+      filePath: `/tmp/${vp.name}.png`,
+      fullPage: true,
+    });
   }
 });
 ```
@@ -156,7 +160,9 @@ await chrome.withBrowser(async () => {
   await chrome.navigate({ url: "https://example.com/api-heavy-page" });
 
   // List API calls
-  const requests = await chrome.listRequests({ resourceTypes: ["fetch", "xhr"] });
+  const requests = await chrome.listRequests({
+    resourceTypes: ["fetch", "xhr"],
+  });
   console.log("API calls:", requests);
 
   // Get details of a specific request
@@ -195,14 +201,17 @@ await chrome.withBrowser(async () => {
 import { chrome, peekaboo } from "./agent-scripts";
 
 // Use Chrome to navigate and interact
-await chrome.withBrowser(async () => {
-  await chrome.navigate({ url: "https://example.com" });
-  await chrome.waitFor({ text: "Welcome" });
-}, { keepOpen: true }); // Keep browser open
+await chrome.withBrowser(
+  async () => {
+    await chrome.navigate({ url: "https://example.com" });
+    await chrome.waitFor({ text: "Welcome" });
+  },
+  { keepOpen: true },
+); // Keep browser open
 
 // Use Peekaboo to capture full browser window
 const capture = await peekaboo.captureForReview({
-  app: "Google Chrome for Testing"
+  app: "Google Chrome for Testing",
 });
 // Review capture.path - includes browser chrome
 await capture.cleanup();
@@ -220,7 +229,7 @@ import { chrome, peekaboo } from "./agent-scripts";
 await peekaboo.window.resize({
   app: "Google Chrome for Testing",
   width: 1280,
-  height: 720
+  height: 720,
 });
 
 await chrome.withBrowser(async () => {
@@ -243,10 +252,10 @@ await withFocusPreservation(async () => {
 
     // Find and click "Allow" in browser permission dialog
     const elements = await peekaboo.detectElements({
-      app: "Google Chrome for Testing"
+      app: "Google Chrome for Testing",
     });
-    const allowBtn = elements.elements.find(e =>
-      e.label?.toLowerCase().includes("allow")
+    const allowBtn = elements.elements.find((e) =>
+      e.label?.toLowerCase().includes("allow"),
     );
     if (allowBtn) {
       await peekaboo.clickElement(allowBtn.id);

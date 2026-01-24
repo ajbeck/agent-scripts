@@ -11,6 +11,7 @@ Workflow for developing and testing terminal-based user interfaces (TUIs) using 
 ## When to Use This Skill
 
 Invoke `/tui-dev-assist` when:
+
 - Testing terminal UI applications (ncurses, blessed, ink, etc.)
 - Debugging CLI tool output formatting
 - Automating terminal application interactions
@@ -44,14 +45,14 @@ await tui.testTUI({ app: "ghostty" }, async (session) => {
 
 ## Tool Selection Guide
 
-| Task | Method | Notes |
-|------|--------|-------|
-| Screenshot terminal | `captureTerminal()` | Captures terminal window |
-| Type text | `session.type()` | Sends keystrokes |
-| Press special key | `session.press()` | Enter, Escape, Tab, Arrow keys |
-| Keyboard shortcut | `session.hotkey()` | Ctrl+C, Cmd+K, etc. |
-| Detect UI elements | `session.detectElements()` | OCR-based element detection |
-| Click UI element | `session.click()` | For mouse-enabled TUIs |
+| Task                | Method                     | Notes                          |
+| ------------------- | -------------------------- | ------------------------------ |
+| Screenshot terminal | `captureTerminal()`        | Captures terminal window       |
+| Type text           | `session.type()`           | Sends keystrokes               |
+| Press special key   | `session.press()`          | Enter, Escape, Tab, Arrow keys |
+| Keyboard shortcut   | `session.hotkey()`         | Ctrl+C, Cmd+K, etc.            |
+| Detect UI elements  | `session.detectElements()` | OCR-based element detection    |
+| Click UI element    | `session.click()`          | For mouse-enabled TUIs         |
 
 ## Workflows
 
@@ -133,10 +134,10 @@ await tui.testTUI({ app: "ghostty" }, async (session) => {
   await session.sleep(500);
 
   // Answer prompts
-  await session.type("my-package");  // package name
+  await session.type("my-package"); // package name
   await session.press("Return");
-  await session.press("Return");     // version (default)
-  await session.type("A test package");  // description
+  await session.press("Return"); // version (default)
+  await session.type("A test package"); // description
   await session.press("Return");
 
   // Screenshot the prompts
@@ -163,8 +164,8 @@ await tui.testTUI({ app: "ghostty" }, async (session) => {
   console.log("Found elements:", elements.elementCount);
 
   // Find and click a button
-  const stageBtn = elements.elements.find(e =>
-    e.label?.toLowerCase().includes("stage")
+  const stageBtn = elements.elements.find((e) =>
+    e.label?.toLowerCase().includes("stage"),
   );
   if (stageBtn) {
     await session.clickElement(stageBtn.id);
@@ -203,34 +204,34 @@ await tui.testTUI({ app: "ghostty" }, async (session) => {
 
 ## Terminal Emulator Support
 
-| Terminal | App Name | Notes |
-|----------|----------|-------|
-| Ghostty | `ghostty` | Recommended |
-| iTerm2 | `iTerm2` | Full support |
-| Terminal.app | `Terminal` | macOS built-in |
-| Alacritty | `Alacritty` | GPU-accelerated |
-| Kitty | `kitty` | GPU-accelerated |
-| VS Code Terminal | `Code` | Integrated terminal |
+| Terminal         | App Name    | Notes               |
+| ---------------- | ----------- | ------------------- |
+| Ghostty          | `ghostty`   | Recommended         |
+| iTerm2           | `iTerm2`    | Full support        |
+| Terminal.app     | `Terminal`  | macOS built-in      |
+| Alacritty        | `Alacritty` | GPU-accelerated     |
+| Kitty            | `kitty`     | GPU-accelerated     |
+| VS Code Terminal | `Code`      | Integrated terminal |
 
 ## Common Key Names
 
 For `session.press()` and `session.hotkey()`:
 
-| Key | Name |
-|-----|------|
-| Enter/Return | `Return` |
-| Escape | `Escape` |
-| Tab | `Tab` |
-| Backspace | `Delete` |
-| Delete | `ForwardDelete` |
-| Arrow Up | `Up` |
-| Arrow Down | `Down` |
-| Arrow Left | `Left` |
-| Arrow Right | `Right` |
-| Space | `Space` |
-| Control | `Control` |
-| Option/Alt | `Option` |
-| Command | `Command` |
+| Key          | Name            |
+| ------------ | --------------- |
+| Enter/Return | `Return`        |
+| Escape       | `Escape`        |
+| Tab          | `Tab`           |
+| Backspace    | `Delete`        |
+| Delete       | `ForwardDelete` |
+| Arrow Up     | `Up`            |
+| Arrow Down   | `Down`          |
+| Arrow Left   | `Left`          |
+| Arrow Right  | `Right`         |
+| Space        | `Space`         |
+| Control      | `Control`       |
+| Option/Alt   | `Option`        |
+| Command      | `Command`       |
 
 ## Source Files
 

@@ -1,0 +1,43 @@
+{
+  "name": "peekaboo",
+  "description": "macOS UI automation - screenshots, clicks, typing, app control",
+  "import": "import { peekaboo } from './scripts'",
+  "categories": [
+    {
+      "name": "vision",
+      "description": "Screenshots and UI element detection",
+      "doc": "docs/vision.md",
+      "functions": ["see", "image"]
+    },
+    {
+      "name": "interaction",
+      "description": "Clicks, typing, keyboard, mouse, scrolling",
+      "doc": "docs/interaction.md",
+      "functions": ["click", "type", "hotkey", "press", "scroll", "move", "drag", "paste"]
+    },
+    {
+      "name": "system",
+      "description": "App, window, clipboard, menu, dialog, dock, space control",
+      "doc": "docs/system.md",
+      "functions": ["app", "window", "clipboard", "menu", "dialog", "dock", "open", "space"]
+    },
+    {
+      "name": "list",
+      "description": "List apps, windows, screens, permissions",
+      "doc": "docs/list.md",
+      "functions": ["list.apps", "list.windows", "list.screens", "list.permissions", "list.menubar"]
+    },
+    {
+      "name": "convenience",
+      "description": "High-level helpers that throw on error",
+      "doc": "docs/convenience.md",
+      "functions": ["screenshot", "captureForReview", "detectElements", "findElement", "clickElement", "clickText", "typeText", "launchApp", "quitApp", "withApp", "withFocusPreservation"]
+    },
+    {
+      "name": "agent",
+      "description": "AI-powered automation",
+      "doc": "docs/agent.md",
+      "functions": ["agent"]
+    }
+  ]
+}

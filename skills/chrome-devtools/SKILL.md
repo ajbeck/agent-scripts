@@ -8,7 +8,11 @@ description: Full API reference for Chrome DevTools browser automation. Use when
 TypeScript interface for browser automation via chrome-devtools-mcp.
 
 ```typescript
-import { chrome, quickScreenshot, navigateAndScreenshot } from "./agent-scripts";
+import {
+  chrome,
+  quickScreenshot,
+  navigateAndScreenshot,
+} from "./agent-scripts";
 ```
 
 ## Quick Start - Recommended Patterns
@@ -26,6 +30,7 @@ await capture.cleanup();
 ```
 
 **Features:**
+
 - Browser and temp files are automatically managed
 - Old screenshots (>5 min) auto-cleaned on each capture
 - Explicit cleanup when done reviewing
@@ -70,7 +75,7 @@ await chrome.withBrowser(
     await chrome.navigate({ url: "https://example.com" });
     // Browser stays open for engineer to inspect
   },
-  { keepOpen: true }
+  { keepOpen: true },
 );
 ```
 
@@ -82,7 +87,9 @@ These functions handle browser lifecycle automatically - the browser starts fres
 
 ```typescript
 await quickScreenshot("https://example.com", "/tmp/shot.png");
-await quickScreenshot("https://example.com", "/tmp/full.png", { fullPage: true });
+await quickScreenshot("https://example.com", "/tmp/full.png", {
+  fullPage: true,
+});
 ```
 
 ### navigateAndScreenshot() - Navigate and Screenshot
@@ -91,10 +98,10 @@ await quickScreenshot("https://example.com", "/tmp/full.png", { fullPage: true }
 await navigateAndScreenshot({
   url: "https://example.com",
   filePath: "/tmp/shot.png",
-  waitForText: "Welcome",  // Optional
-  fullPage: true,          // Optional
-  format: "jpeg",          // Optional: png, jpeg, webp
-  quality: 80,             // Optional: 0-100 for jpeg/webp
+  waitForText: "Welcome", // Optional
+  fullPage: true, // Optional
+  format: "jpeg", // Optional: png, jpeg, webp
+  quality: 80, // Optional: 0-100 for jpeg/webp
 });
 ```
 
@@ -103,7 +110,7 @@ await navigateAndScreenshot({
 ```typescript
 const snapshot = await navigateAndSnapshot({
   url: "https://example.com",
-  waitForText: "Welcome",  // Optional
+  waitForText: "Welcome", // Optional
 });
 // Returns accessibility tree with UIDs for interaction
 ```
@@ -206,8 +213,8 @@ await chrome.resize({ width: 1920, height: 1080 });
 ### Cleanup
 
 ```typescript
-await chrome.quit();        // Kills browser and MCP server
-await chrome.close();       // Just disconnects MCP (browser may stay open)
+await chrome.quit(); // Kills browser and MCP server
+await chrome.close(); // Just disconnects MCP (browser may stay open)
 await chrome.ensureClean(); // Kill any lingering browser before starting
 ```
 
@@ -268,3 +275,16 @@ await chrome.withBrowser(async () => {
 - `agent-scripts/lib/chrome/convenience.ts` - High-level functions
 - `agent-scripts/lib/chrome/base.ts` - Runtime setup
 - `agent-scripts/lib/chrome/types.ts` - TypeScript types
+
+## Incremental Discovery
+
+For focused exploration, read the manifest and category docs:
+
+- `scripts/lib/chrome/manifest.json` - Function index by category
+- `scripts/lib/chrome/docs/input.md` - Click, fill, drag, keyboard
+- `scripts/lib/chrome/docs/navigation.md` - Navigate, pages, waitFor
+- `scripts/lib/chrome/docs/debugging.md` - Snapshot, screenshot, evaluate
+- `scripts/lib/chrome/docs/performance.md` - Tracing and analysis
+- `scripts/lib/chrome/docs/network.md` - Request inspection
+- `scripts/lib/chrome/docs/emulation.md` - Device/network emulation
+- `scripts/lib/chrome/docs/convenience.md` - High-level helpers

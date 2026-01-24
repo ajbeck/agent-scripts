@@ -1,0 +1,49 @@
+{
+  "name": "chrome",
+  "description": "Browser automation via Chrome DevTools MCP",
+  "import": "import { chrome } from './scripts'",
+  "categories": [
+    {
+      "name": "input",
+      "description": "User input automation - clicks, typing, forms",
+      "doc": "docs/input.md",
+      "functions": ["click", "hover", "fill", "fillForm", "drag", "pressKey", "uploadFile", "handleDialog"]
+    },
+    {
+      "name": "navigation",
+      "description": "Page and tab management",
+      "doc": "docs/navigation.md",
+      "functions": ["navigate", "newPage", "closePage", "listPages", "selectPage", "waitFor"]
+    },
+    {
+      "name": "debugging",
+      "description": "Inspection, screenshots, and evaluation",
+      "doc": "docs/debugging.md",
+      "functions": ["snapshot", "screenshot", "evaluate", "listConsoleMessages", "getConsoleMessage"]
+    },
+    {
+      "name": "performance",
+      "description": "Performance tracing and analysis",
+      "doc": "docs/performance.md",
+      "functions": ["startTrace", "stopTrace", "analyzeInsight"]
+    },
+    {
+      "name": "network",
+      "description": "Network request inspection",
+      "doc": "docs/network.md",
+      "functions": ["listRequests", "getRequest"]
+    },
+    {
+      "name": "emulation",
+      "description": "Device and network emulation",
+      "doc": "docs/emulation.md",
+      "functions": ["emulate", "resize"]
+    },
+    {
+      "name": "convenience",
+      "description": "High-level helpers with automatic cleanup",
+      "doc": "docs/convenience.md",
+      "functions": ["withBrowser", "quickScreenshot", "navigateAndScreenshot", "navigateAndSnapshot", "capturePageForReview", "ensureCleanState", "quitBrowser", "closeAllPages", "cleanupScreenshots"]
+    }
+  ]
+}

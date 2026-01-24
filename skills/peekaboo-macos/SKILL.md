@@ -8,7 +8,12 @@ description: Full API reference for peekaboo macOS automation. Use for UI automa
 TypeScript interface for macOS UI automation via the `peekaboo` CLI.
 
 ```typescript
-import { peekaboo, screenshot, detectElements, clickText } from "./agent-scripts";
+import {
+  peekaboo,
+  screenshot,
+  detectElements,
+  clickText,
+} from "./agent-scripts";
 ```
 
 ## Quick Start - Recommended Patterns
@@ -27,6 +32,7 @@ await capture.cleanup();
 ```
 
 **Features:**
+
 - Auto-generates unique temp file path
 - Old screenshots (>5 min) auto-cleaned on each capture
 - Explicit cleanup when done reviewing
@@ -187,9 +193,13 @@ await withApp("Safari", async () => {
 });
 
 // With auto-quit
-await withApp("TextEdit", async () => {
-  await typeText("Hello");
-}, { quitAfter: true });
+await withApp(
+  "TextEdit",
+  async () => {
+    await typeText("Hello");
+  },
+  { quitAfter: true },
+);
 ```
 
 ### waitForElement() - Wait for Element
@@ -306,7 +316,7 @@ await peekaboo.agent({ task: "Open Safari and go to google.com" });
 ```typescript
 await withApp("Safari", async () => {
   const elements = await detectElements();
-  const nameField = elements.elements.find(e => e.label?.includes("Name"));
+  const nameField = elements.elements.find((e) => e.label?.includes("Name"));
   if (nameField) {
     await clickElement(nameField.id);
     await typeText("John Doe");
@@ -340,3 +350,15 @@ await peekaboo.hotkey({ keys: ["cmd", "shift", "4"] }); // Screenshot selection
 - `agent-scripts/lib/peekaboo/convenience.ts` - High-level functions
 - `agent-scripts/lib/peekaboo/types.ts` - Type definitions
 - `agent-scripts/lib/peekaboo/*.ts` - Individual command modules
+
+## Incremental Discovery
+
+For focused exploration, read the manifest and category docs:
+
+- `scripts/lib/peekaboo/manifest.json` - Function index by category
+- `scripts/lib/peekaboo/docs/vision.md` - Screenshots and UI detection
+- `scripts/lib/peekaboo/docs/interaction.md` - Click, type, hotkey, scroll
+- `scripts/lib/peekaboo/docs/system.md` - App, window, clipboard, menu
+- `scripts/lib/peekaboo/docs/list.md` - List apps, windows, screens
+- `scripts/lib/peekaboo/docs/convenience.md` - High-level helpers
+- `scripts/lib/peekaboo/docs/agent.md` - AI-powered automation

@@ -238,6 +238,31 @@ import { acli, peekaboo, chrome, markdownToAdf } from "./scripts";
 | `chrome`        | Browser automation (navigate, click, screenshot)  | `scripts/lib/chrome/`      |
 | `markdownToAdf` | Convert markdown to Atlassian Document Format     | `scripts/lib/md-to-adf.ts` |
 
+### Tool Discovery
+
+For incremental exploration of available functions, each library includes:
+
+- `manifest.json` - Index of all functions organized by category
+- `docs/*.md` - Focused documentation per category (~50-80 lines each)
+
+**Discovery workflow:**
+
+1. Read `scripts/lib/{library}/manifest.json` to see available categories
+2. Read `scripts/lib/{library}/docs/{category}.md` for specific functions
+3. Import and use: `import { chrome } from "./scripts"`
+
+**Example:**
+
+```sh
+# See what's available in chrome library
+cat scripts/lib/chrome/manifest.json
+
+# Read specific category docs
+cat scripts/lib/chrome/docs/input.md
+```
+
+For full API reference, use the skills: `/chrome-devtools`, `/peekaboo-macos`, `/acli-jira`.
+
 ### acli - Jira
 
 ```typescript
@@ -303,20 +328,23 @@ await chrome.close();
 
 ## Installing to Other Projects
 
-Use the setup script to copy agent-scripts tools to another project:
+Use the setup script to install agent-scripts into another project:
 
 ```sh
-bun run scripts/setup.ts --target /path/to/project
+curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/main/scripts/setup.ts | bun run - --target /path/to/project
 ```
 
 Options:
 
-- `--target <path>` - Target project directory (required)
+- `--target <path>` - Target project directory (default: current directory)
+- `--project <key>` - Default Jira project key for examples
 - `--dry-run` - Preview changes without applying
 - `--skip-deps` - Skip dependency installation
 
-The script will:
+The script installs:
 
-1. Copy `scripts/lib/` and `scripts/md-to-adf.ts` to the target
-2. Install required npm dependencies
-3. Generate a `CLAUDE_SNIPPET.md` with CLAUDE.md content to add
+1. `agent-scripts/` - Libraries with `manifest.json` and `docs/` for each tool
+2. `.claude/rules/agent-scripts.md` - Auto-loaded instructions (no CLAUDE.md changes needed)
+3. `.claude/skills/` - Full API reference skills
+
+Claude Code automatically discovers everything - no manual configuration required.

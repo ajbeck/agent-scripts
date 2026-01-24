@@ -1,0 +1,31 @@
+{
+  "name": "acli",
+  "description": "Jira workitem, project, and board management via ACLI",
+  "import": "import { acli } from './scripts'",
+  "categories": [
+    {
+      "name": "workitem",
+      "description": "Create, search, edit, transition, and comment on issues",
+      "doc": "docs/workitem.md",
+      "functions": ["workitem.create", "workitem.view", "workitem.search", "workitem.edit", "workitem.transition", "workitem.comment.create"]
+    },
+    {
+      "name": "project",
+      "description": "List and view projects",
+      "doc": "docs/project.md",
+      "functions": ["project.list", "project.view"]
+    },
+    {
+      "name": "board",
+      "description": "Search boards and list sprints",
+      "doc": "docs/board.md",
+      "functions": ["board.search", "board.get", "board.listSprints"]
+    },
+    {
+      "name": "base",
+      "description": "Low-level command execution",
+      "doc": "docs/base.md",
+      "functions": ["exec", "jiraExec", "jiraExecRaw"]
+    }
+  ]
+}

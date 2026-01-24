@@ -137,3 +137,13 @@ For implementation details and types, read:
 - `agent-scripts/lib/acli/project.ts` - Project operations
 - `agent-scripts/lib/acli/board.ts` - Board operations
 - `agent-scripts/lib/md-to-adf.ts` - Markdown converter
+
+## Incremental Discovery
+
+For focused exploration, read the manifest and category docs:
+
+- `scripts/lib/acli/manifest.json` - Function index by category
+- `scripts/lib/acli/docs/workitem.md` - Create, search, edit, transition
+- `scripts/lib/acli/docs/project.md` - List and view projects
+- `scripts/lib/acli/docs/board.md` - Boards and sprints
+- `scripts/lib/acli/docs/base.md` - Low-level command execution
