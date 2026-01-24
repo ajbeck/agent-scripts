@@ -46,12 +46,38 @@ const FILES_TO_DOWNLOAD = [
   "scripts/selfUpdate.ts",
   "scripts/lib/index.ts",
   "scripts/lib/md-to-adf.ts",
+  // acli
   "scripts/lib/acli/index.ts",
   "scripts/lib/acli/base.ts",
   "scripts/lib/acli/workitem.ts",
   "scripts/lib/acli/project.ts",
   "scripts/lib/acli/board.ts",
   "scripts/lib/acli/utils.ts",
+  // peekaboo
+  "scripts/lib/peekaboo/index.ts",
+  "scripts/lib/peekaboo/base.ts",
+  "scripts/lib/peekaboo/types.ts",
+  "scripts/lib/peekaboo/list.ts",
+  "scripts/lib/peekaboo/image.ts",
+  "scripts/lib/peekaboo/see.ts",
+  "scripts/lib/peekaboo/click.ts",
+  "scripts/lib/peekaboo/input.ts",
+  "scripts/lib/peekaboo/hotkey.ts",
+  "scripts/lib/peekaboo/press.ts",
+  "scripts/lib/peekaboo/scroll.ts",
+  "scripts/lib/peekaboo/move.ts",
+  "scripts/lib/peekaboo/drag.ts",
+  "scripts/lib/peekaboo/paste.ts",
+  "scripts/lib/peekaboo/app.ts",
+  "scripts/lib/peekaboo/window.ts",
+  "scripts/lib/peekaboo/clipboard.ts",
+  "scripts/lib/peekaboo/menu.ts",
+  "scripts/lib/peekaboo/dialog.ts",
+  "scripts/lib/peekaboo/dock.ts",
+  "scripts/lib/peekaboo/space.ts",
+  "scripts/lib/peekaboo/open.ts",
+  "scripts/lib/peekaboo/agent.ts",
+  // chrome
   "scripts/lib/chrome/index.ts",
   "scripts/lib/chrome/base.ts",
   "scripts/lib/chrome/types.ts",
@@ -61,6 +87,7 @@ const FILES_TO_DOWNLOAD = [
   "scripts/lib/chrome/performance.ts",
   "scripts/lib/chrome/network.ts",
   "scripts/lib/chrome/emulation.ts",
+  // config
   "config/mcporter.json",
 ];
 
@@ -337,7 +364,7 @@ async function copyFilesFromLocal(
 ): Promise<void> {
   // Create directory structure
   if (!dryRun) {
-    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")} ${join(scriptsDir, "lib/chrome")} ${join(scriptsDir, "config")}`.quiet();
+    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")} ${join(scriptsDir, "lib/peekaboo")} ${join(scriptsDir, "lib/chrome")} ${join(scriptsDir, "config")}`.quiet();
   }
 
   // Copy lib folder
@@ -381,7 +408,7 @@ async function downloadFilesFromGithub(
 ): Promise<void> {
   // Create directory structure
   if (!dryRun) {
-    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")} ${join(scriptsDir, "lib/chrome")} ${join(scriptsDir, "config")}`.quiet();
+    await Bun.$`mkdir -p ${join(scriptsDir, "lib/acli")} ${join(scriptsDir, "lib/peekaboo")} ${join(scriptsDir, "lib/chrome")} ${join(scriptsDir, "config")}`.quiet();
   }
 
   console.log("Downloading files from GitHub...");

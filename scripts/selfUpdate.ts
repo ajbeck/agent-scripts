@@ -24,12 +24,55 @@ const FILES_TO_UPDATE = [
   "scripts/selfUpdate.ts",
   "scripts/lib/index.ts",
   "scripts/lib/md-to-adf.ts",
+  // acli
   "scripts/lib/acli/index.ts",
   "scripts/lib/acli/base.ts",
   "scripts/lib/acli/workitem.ts",
   "scripts/lib/acli/project.ts",
   "scripts/lib/acli/board.ts",
   "scripts/lib/acli/utils.ts",
+  // peekaboo
+  "scripts/lib/peekaboo/index.ts",
+  "scripts/lib/peekaboo/base.ts",
+  "scripts/lib/peekaboo/types.ts",
+  "scripts/lib/peekaboo/list.ts",
+  "scripts/lib/peekaboo/image.ts",
+  "scripts/lib/peekaboo/see.ts",
+  "scripts/lib/peekaboo/click.ts",
+  "scripts/lib/peekaboo/input.ts",
+  "scripts/lib/peekaboo/hotkey.ts",
+  "scripts/lib/peekaboo/press.ts",
+  "scripts/lib/peekaboo/scroll.ts",
+  "scripts/lib/peekaboo/move.ts",
+  "scripts/lib/peekaboo/drag.ts",
+  "scripts/lib/peekaboo/paste.ts",
+  "scripts/lib/peekaboo/app.ts",
+  "scripts/lib/peekaboo/window.ts",
+  "scripts/lib/peekaboo/clipboard.ts",
+  "scripts/lib/peekaboo/menu.ts",
+  "scripts/lib/peekaboo/dialog.ts",
+  "scripts/lib/peekaboo/dock.ts",
+  "scripts/lib/peekaboo/space.ts",
+  "scripts/lib/peekaboo/open.ts",
+  "scripts/lib/peekaboo/agent.ts",
+  // chrome
+  "scripts/lib/chrome/index.ts",
+  "scripts/lib/chrome/base.ts",
+  "scripts/lib/chrome/types.ts",
+  "scripts/lib/chrome/input.ts",
+  "scripts/lib/chrome/navigation.ts",
+  "scripts/lib/chrome/debugging.ts",
+  "scripts/lib/chrome/performance.ts",
+  "scripts/lib/chrome/network.ts",
+  "scripts/lib/chrome/emulation.ts",
+  // config
+  "config/mcporter.json",
+];
+
+const SKILLS_TO_UPDATE = [
+  "skills/acli-jira/SKILL.md",
+  "skills/peekaboo-macos/SKILL.md",
+  "skills/chrome-devtools/SKILL.md",
 ];
 
 const DEPENDENCIES = [
@@ -38,6 +81,7 @@ const DEPENDENCIES = [
   "@atlaskit/editor-markdown-transformer",
   "ajv",
   "ajv-formats",
+  "mcporter",
 ];
 
 function printHelp() {
@@ -107,7 +151,13 @@ async function updateFiles(
   console.log("Checking for updates...\n");
 
   for (const filePath of FILES_TO_UPDATE) {
-    const relativePath = filePath.replace("scripts/", "");
+    // Handle paths that don't start with "scripts/"
+    let relativePath: string;
+    if (filePath.startsWith("scripts/")) {
+      relativePath = filePath.replace("scripts/", "");
+    } else {
+      relativePath = filePath;
+    }
     const localPath = join(agentScriptsDir, relativePath);
 
     try {
@@ -134,6 +184,55 @@ async function updateFiles(
 
   if (updatedCount === 0) {
     console.log("  All files are up to date");
+  }
+
+  return updatedCount;
+}
+
+/**
+ * Update skills from GitHub
+ */
+async function updateSkills(
+  agentScriptsDir: string,
+  dryRun: boolean
+): Promise<number> {
+  let updatedCount = 0;
+
+  // Skills are installed in the project root's .claude/skills/ directory
+  // agentScriptsDir is <project>/agent-scripts, so project root is parent
+  const projectRoot = dirname(agentScriptsDir);
+  const skillsDir = join(projectRoot, ".claude/skills");
+
+  console.log("Checking skills for updates...\n");
+
+  for (const skillPath of SKILLS_TO_UPDATE) {
+    const skillName = skillPath.split("/")[1]; // e.g., "acli-jira"
+    const localPath = join(skillsDir, skillName, "SKILL.md");
+
+    try {
+      const remoteContent = await downloadFile(skillPath);
+      const changed = await hasChanged(localPath, remoteContent);
+
+      if (changed) {
+        if (dryRun) {
+          console.log(`  Would update skill: ${skillName}`);
+        } else {
+          // Ensure directory exists
+          const dir = dirname(localPath);
+          await Bun.$`mkdir -p ${dir}`.quiet();
+
+          await Bun.write(localPath, remoteContent);
+          console.log(`  Updated skill: ${skillName}`);
+        }
+        updatedCount++;
+      }
+    } catch (error) {
+      console.error(`  Error updating skill ${skillName}: ${error}`);
+    }
+  }
+
+  if (updatedCount === 0) {
+    console.log("  All skills are up to date");
   }
 
   return updatedCount;
@@ -174,10 +273,15 @@ async function main() {
   console.log(`Source: ${GITHUB_RAW_BASE}\n`);
 
   // Update files
-  const updatedCount = await updateFiles(agentScriptsDir, dryRun);
+  const filesUpdated = await updateFiles(agentScriptsDir, dryRun);
+
+  // Update skills
+  const skillsUpdated = await updateSkills(agentScriptsDir, dryRun);
+
+  const totalUpdated = filesUpdated + skillsUpdated;
 
   // Update dependencies if files changed
-  if (!skipDeps && updatedCount > 0) {
+  if (!skipDeps && totalUpdated > 0) {
     console.log("\nUpdating dependencies...");
     await ensureDeps(agentScriptsDir, dryRun);
   } else if (skipDeps) {
@@ -186,9 +290,9 @@ async function main() {
 
   console.log("\n" + "=".repeat(60));
   if (dryRun) {
-    console.log(`Dry run complete. ${updatedCount} file(s) would be updated.`);
-  } else if (updatedCount > 0) {
-    console.log(`Update complete. ${updatedCount} file(s) updated.`);
+    console.log(`Dry run complete. ${filesUpdated} file(s) and ${skillsUpdated} skill(s) would be updated.`);
+  } else if (totalUpdated > 0) {
+    console.log(`Update complete. ${filesUpdated} file(s) and ${skillsUpdated} skill(s) updated.`);
   } else {
     console.log("Already up to date.");
   }
