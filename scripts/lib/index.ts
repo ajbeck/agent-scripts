@@ -2,12 +2,14 @@
  * Agent Scripts Library
  *
  * Usage:
- *   import { acli, markdownToAdf, peekaboo, chrome } from "./scripts";
+ *   import { acli, markdownToAdf, peekaboo, chrome, webDev, tui } from "./scripts";
  *
  *   const issues = await acli.workitem.search({ jql: "project = TEAM" });
  *   const adf = markdownToAdf("# Hello");
  *   await peekaboo.click({ on: "B1" });
  *   await chrome.navigate({ url: "https://example.com" });
+ *   await webDev.captureFullBrowser({ url: "https://example.com" });
+ *   await tui.captureTerminal({ app: "ghostty" });
  */
 
 // ACLI Jira interface
@@ -26,6 +28,17 @@ export {
   peekabooExec,
   peekabooExecRaw,
   type PeekabooResult,
+  // Convenience exports
+  captureForReview,
+  captureAsBase64,
+  cleanupScreenshots,
+  detectElements,
+  findElement,
+  findElements,
+  clickText,
+  typeText,
+  withFocusPreservation,
+  getFrontmostApp,
 } from "./peekaboo";
 
 // Chrome DevTools browser automation interface
@@ -34,4 +47,16 @@ export {
   getChrome,
   closeChrome,
   chromeExec,
+  // Convenience exports
+  capturePageForReview,
+  quickScreenshot,
+  navigateAndScreenshot,
+  withBrowser,
+  quitBrowser,
 } from "./chrome";
+
+// Web development (Chrome + Peekaboo combined)
+export { webDev, captureFullBrowser, testSession, testResponsive } from "./webdev";
+
+// Terminal UI development
+export { tui, captureTerminal, testTUI, runAndCapture } from "./tui";
