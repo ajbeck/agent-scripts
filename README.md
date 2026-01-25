@@ -161,6 +161,42 @@ Following Anthropic's "code execution with MCP" pattern:
 3. **Code execution**: Claude writes TypeScript to call tools, enabling data transformation and control flow
 4. **Auto-discovery**: Rules and skills are automatically found by Claude Code
 
+## Versioning
+
+This project uses [semver](https://semver.org/) with three-tier git tags:
+
+| Tag      | Example  | Description             |
+| -------- | -------- | ----------------------- |
+| `vM`     | `v0`     | Latest in major version |
+| `vM.m`   | `v0.7`   | Latest in minor version |
+| `vM.m.p` | `v0.7.0` | Exact release           |
+
+### Installing Specific Versions
+
+```sh
+# Latest (may have breaking changes)
+curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/v0/scripts/setup.ts | bun run -
+
+# Stable minor version (patches only)
+curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/v0.7/scripts/setup.ts | bun run -
+
+# Exact version (reproducible)
+curl -fsSL https://raw.githubusercontent.com/ajbeck/agent-scripts/v0.7.0/scripts/setup.ts | bun run -
+```
+
+### Release Process
+
+Releases are created via GitHub Actions workflow dispatch:
+
+1. Update `VERSION` file with new semver version
+2. Commit and push to main
+3. Run the release workflow: `gh workflow run release.yaml`
+
+The workflow creates all three tag tiers and a GitHub release with:
+
+- Full version with build metadata (e.g., `0.7.0+gh.123456.abc1234`)
+- Traceability links to the commit and workflow run
+
 ## Development
 
 ```sh

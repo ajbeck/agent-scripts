@@ -327,6 +327,47 @@ await chrome.close();
 
 **For full APIs, read the TypeScript source files or use the skills in `.claude/skills/`.**
 
+## Releases and Versioning
+
+Version is stored in `VERSION` file (semver format: `M.m.p`).
+
+### Creating a Release
+
+1. Update `VERSION` file with new version
+2. Commit and push: `committer "chore: bump version to X.Y.Z" VERSION && git push`
+3. Trigger release workflow: `gh workflow run release.yaml`
+
+Or use the gh library:
+
+```typescript
+import { runAndWatch } from "./scripts";
+const run = await runAndWatch("release.yaml");
+console.log(run.conclusion); // "success" or "failure"
+```
+
+### What the Release Workflow Does
+
+The `.github/workflows/release.yaml` workflow:
+
+1. Parses `VERSION` file from HEAD of main
+2. Creates/updates three git tags:
+   - `vM` - Latest in major version (e.g., `v0`)
+   - `vM.m` - Latest in minor version (e.g., `v0.7`)
+   - `vM.m.p` - Exact release (e.g., `v0.7.0`)
+3. Creates GitHub release on `vM.m.p` tag
+4. Generates release notes with:
+   - Full version with build metadata: `0.7.0+gh.<run_id>.<short_sha>`
+   - Install command
+   - Traceability links to commit and workflow run
+
+### Version References
+
+| Reference | Example  | Use Case                                 |
+| --------- | -------- | ---------------------------------------- |
+| `vM`      | `v0`     | Always latest, may have breaking changes |
+| `vM.m`    | `v0.7`   | Latest patches, stable features          |
+| `vM.m.p`  | `v0.7.0` | Exact version, fully reproducible        |
+
 ## Installing to Other Projects
 
 Use the setup script to install agent-scripts into another project:
