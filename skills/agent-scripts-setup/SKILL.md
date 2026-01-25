@@ -2,7 +2,7 @@
 name: agent-scripts-setup
 description: Install, update, and troubleshoot agent-scripts automation tools.
 source: agent-scripts
-version: "1.0.0"
+version: "0.6.0"
 ---
 
 # Agent Scripts Setup

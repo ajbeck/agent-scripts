@@ -2,7 +2,7 @@
 name: chrome-devtools
 description: Full API reference for Chrome DevTools browser automation. Use when automating browsers, taking screenshots, web scraping, testing web apps, or debugging performance.
 source: agent-scripts
-version: "1.0.0"
+version: "0.6.0"
 ---
 
 # Chrome DevTools Browser Automation

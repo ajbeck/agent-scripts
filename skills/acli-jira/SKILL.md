@@ -2,7 +2,7 @@
 name: acli-jira
 description: Full API reference for acli Jira interface. Use when working with Jira workitems, projects, or boards.
 source: agent-scripts
-version: "1.0.0"
+version: "0.6.0"
 ---
 
 # ACLI Jira Interface

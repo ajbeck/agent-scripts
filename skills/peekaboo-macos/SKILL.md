@@ -2,7 +2,7 @@
 name: peekaboo-macos
 description: Full API reference for peekaboo macOS automation. Use for UI automation, screenshots, clicking, typing, and app control.
 source: agent-scripts
-version: "1.0.0"
+version: "0.6.0"
 ---
 
 # Peekaboo macOS Automation
