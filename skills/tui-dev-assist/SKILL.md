@@ -1,6 +1,8 @@
 ---
 name: tui-dev-assist
 description: Workflow for terminal UI (TUI) development using Peekaboo. Use when testing CLI apps, TUI interfaces, or terminal-based applications.
+source: agent-scripts
+version: "1.0.0"
 disable-model-invocation: true
 ---
 

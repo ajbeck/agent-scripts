@@ -1,6 +1,8 @@
 ---
 name: web-dev-assist
 description: Unified workflow for web app development using Chrome DevTools + Peekaboo. Use when testing web UIs, debugging layouts, or automating browser interactions.
+source: agent-scripts
+version: "1.0.0"
 disable-model-invocation: true
 ---
 
