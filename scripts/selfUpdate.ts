@@ -12,7 +12,15 @@
 
 import { join, dirname } from "path";
 import { existsSync } from "fs";
-import { VERSION, REPOSITORY } from "./version.ts";
+
+// Try to import version locally, fallback if not available
+let VERSION = "unknown";
+try {
+  const versionModule = await import("./version.ts");
+  VERSION = versionModule.VERSION;
+} catch {
+  // Version file missing - will be updated from downloaded files
+}
 
 const GITHUB_REPO = "ajbeck/agent-scripts";
 const GITHUB_BRANCH = "main";

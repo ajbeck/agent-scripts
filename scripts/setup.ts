@@ -11,9 +11,17 @@
  *   bun run scripts/setup.ts --target /path/to/project
  */
 
-import { join, resolve, relative, dirname, basename } from "path";
+import { join, resolve, dirname } from "path";
 import { existsSync } from "fs";
-import { VERSION, REPOSITORY } from "./version.ts";
+
+// Try to import version locally, fallback to placeholder if running from stdin
+let VERSION = "latest";
+try {
+  const versionModule = await import("./version.ts");
+  VERSION = versionModule.VERSION;
+} catch {
+  // Running from stdin (curl | bun), version will be read from downloaded files
+}
 
 const GITHUB_REPO = "ajbeck/agent-scripts";
 const GITHUB_BRANCH = "main";
@@ -340,6 +348,19 @@ async function downloadAndExtract(
     await Bun.$`mkdir -p ${tempDir}`.quiet();
     await Bun.$`curl -sL ${tarballUrl} | tar -xz -C ${tempDir} --strip-components=1`.quiet();
     console.log(`  ${colors.green}✓${colors.reset} Downloaded and extracted\n`);
+
+    // Read version from downloaded files if not available locally
+    if (VERSION === "latest") {
+      const versionFile = join(tempDir, "scripts/version.ts");
+      if (existsSync(versionFile)) {
+        const content = await Bun.file(versionFile).text();
+        const match = content.match(/VERSION\s*=\s*"([^"]+)"/);
+        if (match) {
+          VERSION = match[1];
+          console.log(`  ${colors.gray}Version: ${VERSION}${colors.reset}\n`);
+        }
+      }
+    }
 
     // Copy directories with file-level tracking
     for (const { src, dest } of DIRECTORIES_TO_COPY) {
