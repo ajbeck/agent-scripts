@@ -228,7 +228,7 @@ Break implementation into small discrete tasks to avoid AWS Bedrock output token
 TypeScript interfaces for automation. Import from `./scripts`:
 
 ```typescript
-import { acli, peekaboo, chrome, markdownToAdf } from "./scripts";
+import { acli, peekaboo, chrome, gh, markdownToAdf } from "./scripts";
 ```
 
 | Tool            | Purpose                                           | Source                     |
@@ -236,6 +236,7 @@ import { acli, peekaboo, chrome, markdownToAdf } from "./scripts";
 | `acli`          | Jira workitems, projects, boards                  | `scripts/lib/acli/`        |
 | `peekaboo`      | macOS UI automation (screenshots, clicks, typing) | `scripts/lib/peekaboo/`    |
 | `chrome`        | Browser automation (navigate, click, screenshot)  | `scripts/lib/chrome/`      |
+| `gh`            | GitHub Actions workflow development               | `scripts/lib/gh/`          |
 | `markdownToAdf` | Convert markdown to Atlassian Document Format     | `scripts/lib/md-to-adf.ts` |
 
 ### Tool Discovery
@@ -261,7 +262,7 @@ cat scripts/lib/chrome/manifest.json
 cat scripts/lib/chrome/docs/input.md
 ```
 
-For full API reference, use the skills: `/chrome-devtools`, `/peekaboo-macos`, `/acli-jira`.
+For full API reference, use the skills: `/chrome-devtools`, `/peekaboo-macos`, `/acli-jira`, `/gh-workflows`.
 
 ### acli - Jira
 

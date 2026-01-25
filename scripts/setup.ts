@@ -186,7 +186,7 @@ function generateRulesFile(): string {
 TypeScript automation libraries are available. Import from \`./agent-scripts\`:
 
 \`\`\`typescript
-import { acli, peekaboo, chrome } from "./agent-scripts";
+import { acli, peekaboo, chrome, gh } from "./agent-scripts";
 \`\`\`
 
 | Library    | Purpose                                           |
@@ -194,6 +194,7 @@ import { acli, peekaboo, chrome } from "./agent-scripts";
 | \`acli\`     | Jira workitems, projects, boards                  |
 | \`peekaboo\` | macOS UI automation (screenshots, clicks, typing) |
 | \`chrome\`   | Browser automation (navigate, click, screenshot)  |
+| \`gh\`       | GitHub Actions workflow development               |
 
 ## Tool Discovery
 
@@ -208,6 +209,7 @@ Detailed API references are available as skills:
 - \`/acli-jira\` - Full Jira API
 - \`/peekaboo-macos\` - Full macOS automation API
 - \`/chrome-devtools\` - Full browser automation API
+- \`/gh-workflows\` - GitHub Actions workflow development
 
 ## Reference
 
@@ -231,7 +233,7 @@ function generateAgentScriptsMd(project: string): string {
 TypeScript interfaces for automation. Import from \`./agent-scripts\`:
 
 \`\`\`typescript
-import { acli, peekaboo, chrome, markdownToAdf } from "./agent-scripts";
+import { acli, peekaboo, chrome, gh, markdownToAdf } from "./agent-scripts";
 \`\`\`
 
 | Tool            | Purpose                                           | Source                          |
@@ -239,6 +241,7 @@ import { acli, peekaboo, chrome, markdownToAdf } from "./agent-scripts";
 | \`acli\`          | Jira workitems, projects, boards                  | \`agent-scripts/lib/acli/\`       |
 | \`peekaboo\`      | macOS UI automation (screenshots, clicks, typing) | \`agent-scripts/lib/peekaboo/\`   |
 | \`chrome\`        | Browser automation (navigate, click, screenshot)  | \`agent-scripts/lib/chrome/\`     |
+| \`gh\`            | GitHub Actions workflow development               | \`agent-scripts/lib/gh/\`         |
 | \`markdownToAdf\` | Convert markdown to Atlassian Document Format     | \`agent-scripts/lib/md-to-adf.ts\` |
 
 ## Tool Discovery

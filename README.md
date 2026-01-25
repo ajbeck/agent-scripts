@@ -59,11 +59,12 @@ your-project/
 | `chrome`   | Browser automation (navigate, click, screenshot)  | `lib/chrome/`   |
 | `webDev`   | Combined Chrome + Peekaboo for web testing        | `lib/webdev/`   |
 | `tui`      | Terminal UI testing                               | `lib/tui/`      |
+| `gh`       | GitHub Actions workflow development               | `lib/gh/`       |
 
 ### Quick Examples
 
 ```typescript
-import { acli, peekaboo, chrome } from "./agent-scripts";
+import { acli, peekaboo, chrome, gh } from "./agent-scripts";
 
 // Jira
 const issues = await acli.workitem.search({ jql: "project = TEAM" });
@@ -78,6 +79,10 @@ await chrome.withBrowser(async () => {
   await chrome.navigate({ url: "https://example.com" });
   await chrome.screenshot({ filePath: "/tmp/screen.png" });
 });
+
+// GitHub Actions workflows
+await gh.workflow.run("release.yaml");
+const runs = await gh.run.list({ workflow: "test.yaml" });
 ```
 
 ## Documentation Architecture

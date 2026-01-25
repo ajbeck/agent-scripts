@@ -2,7 +2,7 @@
  * Agent Scripts Library
  *
  * Usage:
- *   import { acli, markdownToAdf, peekaboo, chrome, webDev, tui } from "./scripts";
+ *   import { acli, markdownToAdf, peekaboo, chrome, webDev, tui, gh } from "./scripts";
  *
  *   const issues = await acli.workitem.search({ jql: "project = TEAM" });
  *   const adf = markdownToAdf("# Hello");
@@ -10,6 +10,7 @@
  *   await chrome.navigate({ url: "https://example.com" });
  *   await webDev.captureFullBrowser({ url: "https://example.com" });
  *   await tui.captureTerminal({ app: "ghostty" });
+ *   await gh.workflow.run("release.yaml");
  */
 
 // ACLI Jira interface
@@ -60,3 +61,21 @@ export { webDev, captureFullBrowser, testSession, testResponsive } from "./webde
 
 // Terminal UI development
 export { tui, captureTerminal, testTUI, runAndCapture } from "./tui";
+
+// GitHub CLI workflow automation
+export {
+  gh,
+  ghExec,
+  ghJson,
+  ghRaw,
+  type GhResult,
+  // Convenience exports
+  runWorkflow,
+  runAndWatch,
+  getFailedSteps,
+  rerunFailed,
+  rerunWithDebug,
+  downloadArtifacts,
+  getLatestRun,
+  waitForCompletion,
+} from "./gh";

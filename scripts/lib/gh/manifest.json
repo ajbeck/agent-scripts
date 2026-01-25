@@ -1,0 +1,46 @@
+{
+  "name": "gh",
+  "description": "GitHub CLI wrapper for workflow development and debugging",
+  "import": "import { gh } from './agent-scripts'",
+  "categories": [
+    {
+      "name": "workflow",
+      "description": "List, view, and trigger GitHub Actions workflows",
+      "doc": "docs/workflow.md",
+      "functions": ["workflow.list", "workflow.view", "workflow.viewYaml", "workflow.run"]
+    },
+    {
+      "name": "run",
+      "description": "List, view, watch, and manage workflow runs",
+      "doc": "docs/run.md",
+      "functions": [
+        "run.list",
+        "run.view",
+        "run.viewVerbose",
+        "run.getJobs",
+        "run.viewLog",
+        "run.viewJobLog",
+        "run.viewLogFailed",
+        "run.watch",
+        "run.rerun",
+        "run.cancel",
+        "run.download"
+      ]
+    },
+    {
+      "name": "convenience",
+      "description": "High-level helpers for workflow development iteration",
+      "doc": "docs/convenience.md",
+      "functions": [
+        "runWorkflow",
+        "runAndWatch",
+        "getFailedSteps",
+        "rerunFailed",
+        "rerunWithDebug",
+        "downloadArtifacts",
+        "getLatestRun",
+        "waitForCompletion"
+      ]
+    }
+  ]
+}
