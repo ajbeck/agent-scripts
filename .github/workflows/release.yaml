@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse version
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          FULL_VERSION="${VERSION}+gh.${GITHUB_RUN_ID}.${SHORT_SHA}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Create tags
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create/update all three tag levels
+          git tag -fa "v${{ steps.version.outputs.major }}" -m "Release v${{ steps.version.outputs.version }}"
+          git tag -fa "v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}" -m "Release v${{ steps.version.outputs.version }}"
+          git tag -fa "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+
+          git push origin --tags --force
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          FULL_VERSION="${{ steps.version.outputs.full_version }}"
+          MAJOR="${{ steps.version.outputs.major }}"
+          MINOR="${{ steps.version.outputs.minor }}"
+
+          # Delete existing release if present (for re-runs)
+          gh release delete "v${VERSION}" --yes 2>/dev/null || true
+
+          # Create release with notes
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes "## agent-scripts v${VERSION}
+
+          **Full version:** \`${FULL_VERSION}\`
+
+          ### Install
+          \`\`\`sh
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/v${VERSION}/scripts/setup.ts | bun run -
+          \`\`\`
+
+          ### Tags
+          - \`v${MAJOR}\` - Latest in major version
+          - \`v${MAJOR}.${MINOR}\` - Latest in minor version
+          - \`v${VERSION}\` - This exact release
+
+          ### Traceability
+          - **Commit:** ${{ github.sha }}
+          - **Workflow run:** [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Generate summary
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          FULL_VERSION="${{ steps.version.outputs.full_version }}"
+          MAJOR="${{ steps.version.outputs.major }}"
+          MINOR="${{ steps.version.outputs.minor }}"
+          SHORT_SHA="${{ steps.version.outputs.short_sha }}"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # Release Summary
+
+          | Field | Value |
+          |-------|-------|
+          | **Version** | v${VERSION} |
+          | **Full Version** | \`${FULL_VERSION}\` |
+          | **Commit** | \`${SHORT_SHA}\` (${{ github.sha }}) |
+
+          ## Tags Created
+
+          | Tag | Purpose |
+          |-----|---------|
+          | \`v${MAJOR}\` | Latest major |
+          | \`v${MAJOR}.${MINOR}\` | Latest minor |
+          | \`v${VERSION}\` | Exact release |
+
+          ## Install Command
+
+          \`\`\`sh
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/v${VERSION}/scripts/setup.ts | bun run -
+          \`\`\`
+
+          ## Links
+
+          - [Release page](${{ github.server_url }}/${{ github.repository }}/releases/tag/v${VERSION})
+          - [Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          EOF
