@@ -142,10 +142,10 @@ curl -fsSL ... | bun run - --dry-run
 ## Updating
 
 ```sh
-bun run agent-scripts/selfUpdate.ts
+bun run agent-scripts/setup.ts
 ```
 
-Or re-run the setup script - it detects existing installations and updates files while preserving `node_modules`.
+The setup script auto-detects existing installations and updates files while preserving `node_modules`.
 
 ## How It Works
 

@@ -48,7 +48,7 @@ const TOP_LEVEL_FILES = [
   "md-to-adf.ts",
   "acli.ts",
   "validate-workflow.ts",
-  "selfUpdate.ts",
+  "setup.ts",
   "version.ts",
 ];
 
@@ -291,7 +291,7 @@ await chrome.withBrowser(async () => {
 ## Updating
 
 \`\`\`sh
-bun run agent-scripts/selfUpdate.ts
+bun run agent-scripts/setup.ts
 \`\`\`
 `;
 }
@@ -314,12 +314,14 @@ ${colors.bold}Creates/Updates:${colors.reset}
   <target>/.claude/skills/
     └── (all skills)
 
-${colors.bold}Usage:${colors.reset}
+${colors.bold}Install:${colors.reset}
   curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/setup.ts | bun run -
-  bun run scripts/setup.ts --target /path/to/project
+
+${colors.bold}Update:${colors.reset}
+  bun run agent-scripts/setup.ts
 
 ${colors.bold}Options:${colors.reset}
-  --target <path>     Target directory (default: current directory)
+  --target <path>     Target directory (auto-detected if in existing installation)
   --project <key>     Default Jira project key (e.g., MYPROJECT)
   --dry-run           Show what would be done without making changes
   --skip-deps         Skip dependency installation
@@ -509,6 +511,27 @@ function getArg(args: string[], flag: string): string | undefined {
   return i !== -1 && args[i + 1] ? args[i + 1] : undefined;
 }
 
+/**
+ * Detect if we're running from inside an agent-scripts installation
+ * and return the project root (parent of agent-scripts/)
+ */
+function detectProjectRoot(): string | null {
+  const cwd = process.cwd();
+  const cwdName = cwd.split("/").pop();
+
+  // Running from agent-scripts/ directory
+  if (cwdName === FOLDER_NAME && existsSync(join(cwd, "lib"))) {
+    return dirname(cwd);
+  }
+
+  // Running via bun run agent-scripts/setup.ts from project root
+  if (existsSync(join(cwd, FOLDER_NAME, "lib"))) {
+    return cwd;
+  }
+
+  return null;
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -517,7 +540,19 @@ async function main() {
     process.exit(0);
   }
 
-  const targetDir = resolve(getArg(args, "--target") || ".");
+  // Auto-detect target if running from existing installation
+  let targetDir = getArg(args, "--target");
+  if (!targetDir) {
+    const detected = detectProjectRoot();
+    if (detected) {
+      targetDir = detected;
+      console.log(`${colors.gray}Detected existing installation, updating...${colors.reset}`);
+    } else {
+      targetDir = ".";
+    }
+  }
+  targetDir = resolve(targetDir);
+
   const project = getArg(args, "--project") || "PROJECT_KEY";
   const dryRun = args.includes("--dry-run");
   const skipDeps = args.includes("--skip-deps");
